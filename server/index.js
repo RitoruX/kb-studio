@@ -176,7 +176,10 @@ async function createTaskFile({ project = '', title, description = '', status, d
 // ---------- inbox ----------
 const inboxPath = () => abs(config.inbox?.path || '_Inbox.md');
 const captureHeading = () => config.inbox?.heading || '## 📥 Captured';
+const stripComments = (s) => s.replace(/<!--.*?-->/g, '');
 
+// An inbox item is an open task line (`- [ ] …`) plus any indented lines beneath
+// it (detail sub-bullets). `raw` is the whole block, used as its identity.
 async function readInboxItems() {
   let raw;
   try {
@@ -184,26 +187,67 @@ async function readInboxItems() {
   } catch {
     return [];
   }
+  const lines = raw.split('\n');
   const items = [];
-  for (const line of raw.split('\n')) {
-    const m = line.match(/^\s*-\s*\[ \]\s+(.*)$/);
-    if (m) items.push({ raw: line, text: m[1].replace(/<!--.*?-->/g, '').trim() });
+  for (let i = 0; i < lines.length; ) {
+    const m = lines[i].match(/^-\s*\[ \]\s+(.*)$/);
+    if (!m) {
+      i++;
+      continue;
+    }
+    const start = i++;
+    const details = [];
+    while (i < lines.length && /^\s+\S/.test(lines[i])) {
+      const d = stripComments(lines[i].replace(/^\s*-\s*/, '')).trim();
+      if (d) details.push(d);
+      i++;
+    }
+    items.push({ raw: lines.slice(start, i).join('\n'), text: stripComments(m[1]).trim(), details });
   }
   return items;
 }
 
-async function removeInboxLine(raw) {
+// Render an item as its markdown block: a checkbox line + indented detail bullets.
+const inboxBlock = (text, details = []) =>
+  [
+    `- [ ] ${String(text).trim()}`,
+    ...(details || []).map((d) => String(d).trim()).filter(Boolean).map((d) => `  - ${d}`),
+  ].join('\n');
+
+// Replace a block (matched verbatim by `raw`) with `replacement`; null = delete it.
+async function spliceInboxBlock(raw, replacement) {
   if (!raw) return;
+  let fileRaw;
   try {
-    const lines = (await fs.readFile(inboxPath(), 'utf8')).split('\n');
-    const idx = lines.indexOf(raw);
-    if (idx !== -1) {
-      lines.splice(idx, 1);
-      await fs.writeFile(inboxPath(), lines.join('\n'), 'utf8');
-    }
+    fileRaw = await fs.readFile(inboxPath(), 'utf8');
   } catch {
-    /* inbox gone */
+    return;
   }
+  const fileLines = fileRaw.split('\n');
+  const block = raw.split('\n');
+  for (let s = 0; s + block.length <= fileLines.length; s++) {
+    if (block.every((bl, k) => fileLines[s + k] === bl)) {
+      fileLines.splice(s, block.length, ...(replacement == null ? [] : replacement.split('\n')));
+      await fs.writeFile(inboxPath(), fileLines.join('\n'), 'utf8');
+      return;
+    }
+  }
+}
+const removeInboxBlock = (raw) => spliceInboxBlock(raw, null);
+
+// Non-task items are filed into the KB as a standalone note (title -> H1 + filename).
+const notesDir = () => abs(config.notePath || 'Notes');
+async function createNoteFile({ title, body = '' }) {
+  const dir = notesDir();
+  await fs.mkdir(dir, { recursive: true });
+  const base = slugify(title);
+  let name = `${base}.md`;
+  let i = 2;
+  while (existsSync(path.join(dir, name))) name = `${base}-${i++}.md`;
+  const a = path.join(dir, name);
+  const content = (`# ${String(title).trim()}\n\n${body || ''}`).trim() + '\n';
+  await fs.writeFile(a, matter.stringify(content, { created: new Date().toISOString().slice(0, 10) }), 'utf8');
+  return a;
 }
 
 // ---------- API: health (used by `npm run doctor`) ----------
@@ -300,7 +344,7 @@ app.get('/api/inbox', async (_req, res) => {
 
 app.post('/api/inbox', async (req, res) => {
   try {
-    const { text } = req.body;
+    const { text, details } = req.body;
     if (!text?.trim()) return res.status(400).json({ error: 'text required' });
     let raw = '';
     try {
@@ -309,7 +353,7 @@ app.post('/api/inbox', async (req, res) => {
       /* inbox not created yet */
     }
     const heading = captureHeading();
-    const entry = `- [ ] ${text.trim()}`;
+    const entry = inboxBlock(text, details);
     const next = raw.includes(heading)
       ? raw.replace(heading, `${heading}\n${entry}`)
       : `${raw.replace(/\s*$/, '')}\n\n${heading}\n${entry}\n`;
@@ -320,11 +364,36 @@ app.post('/api/inbox', async (req, res) => {
   }
 });
 
+// edit an inbox item in place (title + details)
+app.put('/api/inbox', async (req, res) => {
+  try {
+    const { raw, text, details } = req.body;
+    if (!raw || !text?.trim()) return res.status(400).json({ error: 'raw and text required' });
+    await spliceInboxBlock(raw, inboxBlock(text, details));
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
+// file a non-task item into the KB as a standalone note, then drop it from the inbox
+app.post('/api/inbox/file-note', async (req, res) => {
+  try {
+    const { raw, title, body } = req.body;
+    if (!title?.trim()) return res.status(400).json({ error: 'title required' });
+    const a = await createNoteFile({ title, body });
+    await removeInboxBlock(raw);
+    res.status(201).json({ ok: true, file: relId(a) });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 app.post('/api/inbox/promote', async (req, res) => {
   try {
     if (!req.body.title?.trim()) return res.status(400).json({ error: 'title required' });
     const a = await createTaskFile(req.body);
-    await removeInboxLine(req.body.raw);
+    await removeInboxBlock(req.body.raw);
     res.status(201).json(await readTask(a));
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -334,7 +403,7 @@ app.post('/api/inbox/promote', async (req, res) => {
 app.delete('/api/inbox', async (req, res) => {
   try {
     if (!req.query.raw) return res.status(400).json({ error: 'raw required' });
-    await removeInboxLine(req.query.raw);
+    await removeInboxBlock(req.query.raw);
     res.json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: String(e) });
