@@ -1,0 +1,27 @@
+{
+  "taskMatch": { "frontmatter": { "type": "task" } },
+  "includeRoots": ["10-Projects"],
+  "newTaskPath": "10-Projects/{group}/Tasks",
+  "noGroupFolder": "_Unsorted",
+  "fields": {
+    "title": "title",
+    "status": "status",
+    "due": "due",
+    "group": { "key": "project", "folderSegment": 1 }
+  },
+  "statuses": [
+    { "name": "Backlog", "color": "slate" },
+    { "name": "To do", "color": "violet" },
+    { "name": "Doing", "color": "blue" },
+    { "name": "In Review", "color": "cyan" },
+    { "name": "Done", "color": "emerald" }
+  ],
+  "doneStatus": "Done",
+  "activeStatuses": ["Doing"],
+  "reviewStatuses": ["In Review"],
+  "groupLabel": "Project",
+  "noGroupLabel": "No project",
+  "inbox": { "path": "_Inbox.md", "heading": "## 📥 Captured" },
+  "searchExclude": [".obsidian", ".git", "_templates", "node_modules"],
+  "obsidianVault": ""
+}

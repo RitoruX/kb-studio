@@ -1,0 +1,37 @@
+{
+  "name": "kb-studio",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first kanban + KB front-end over your markdown vault",
+  "scripts": {
+    "setup": "node setup.mjs",
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "node --watch --env-file=.env server/index.js",
+    "dev:web": "vite",
+    "build": "vite build",
+    "start": "node server/index.js",
+    "serve": "pm2 start ecosystem.config.cjs && pm2 save",
+    "stop": "pm2 stop kb-studio",
+    "restart": "pm2 restart kb-studio",
+    "logs": "pm2 logs kb-studio",
+    "doctor": "node doctor.mjs"
+  },
+  "dependencies": {
+    "dompurify": "^3.4.11",
+    "express": "^4.21.2",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.5"
+  },
+  "devDependencies": {
+    "@dnd-kit/core": "^6.1.0",
+    "@dnd-kit/utilities": "^3.2.2",
+    "@tailwindcss/vite": "^4.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "concurrently": "^9.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.0.0",
+    "vite": "^6.0.0"
+  }
+}
