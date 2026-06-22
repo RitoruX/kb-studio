@@ -47,9 +47,9 @@ Then everything is served from http://localhost:3001.
 
 ## Using it on any vault (configuration)
 
-KB Studio runs on its built-in defaults with **no config** (the author's
-`10-Projects/<project>/Tasks/` + `type: task` layout). To adapt it to a different
-vault, drop a **`kb-studio.config.json`** in the vault root — see
+KB Studio runs on its built-in defaults with **no config**: it scans the whole
+vault for `type: task` notes and writes new ones under `Tasks/<group>/`. To adapt
+it to your vault, drop a **`kb-studio.config.json`** in the vault root — see
 `kb-studio.config.example.json`. Anything you omit falls back to the default.
 
 Common knobs (statuses/colors, labels, Obsidian vault name, inbox file, search
@@ -110,9 +110,11 @@ you want it back.
   heading in `_Inbox.md` — same file your phone/Obsidian capture uses.
 - **Inbox drawer** (📥 button): lists open `- [ ]` lines from `_Inbox.md`. “→ Make task”
   files the line into a project (opens the task editor) and removes it from the inbox.
-- **Search box** (header): full-text search across the vault. Excludes `60-Access/`
-  (credentials), `99-Archive/`, `_templates/`, and the gated `databases/WH` schema tree.
-  Results deep-link into Obsidian (`obsidian://`, assumes the vault is named `KB`).
+- **Search box** (header): full-text search across the vault. Excluded paths are
+  configurable via `searchExclude` (defaults: `.obsidian`, `.git`, `.trash`,
+  `_templates`, `node_modules`) — add your own private folders there. Results
+  deep-link into Obsidian (`obsidian://`), using your `obsidianVault` name (or the
+  vault folder name by default).
 
 ## Working-day features
 

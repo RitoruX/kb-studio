@@ -4,17 +4,18 @@ import path from 'node:path';
 
 export const CONFIG_FILE = 'kb-studio.config.json';
 
-// Defaults reproduce the original hardcoded behaviour, so the author's vault
-// works with NO config file. Other vaults drop a kb-studio.config.json in their
-// root to override any of these (see kb-studio.config.example.json).
+// Layout-agnostic defaults: with NO config file, KB Studio scans the whole vault
+// for `type: task` notes and writes new ones under `Tasks/<group>/`. Any vault can
+// drop a kb-studio.config.json in its root to override any of these
+// (see kb-studio.config.example.json).
 export const DEFAULTS = {
   // how a markdown note is recognised as a task:
   //   { frontmatter: { type: "task" } }  | { tag: "task" } | { folder: true }
   taskMatch: { frontmatter: { type: 'task' } },
   // limit the task scan to these top roots ([] = whole vault, minus excludes)
-  includeRoots: ['10-Projects'],
+  includeRoots: [],
   // where new task files are written; {group} -> the group value (or noGroupFolder)
-  newTaskPath: '10-Projects/{group}/Tasks',
+  newTaskPath: 'Tasks/{group}',
   noGroupFolder: '_Unsorted',
   // frontmatter field names + how the grouping value is derived
   fields: {
@@ -42,11 +43,9 @@ export const DEFAULTS = {
   searchExclude: [
     '.obsidian',
     '.git',
+    '.trash',
     '_templates',
-    '99-Archive',
-    '60-Access',
     'node_modules',
-    '30-Knowledge/databases/WH',
   ],
   obsidianVault: '', // '' => derived from the vault folder name
 };
