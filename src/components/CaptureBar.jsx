@@ -72,10 +72,10 @@ export default function CaptureBar({ onCapture }) {
         }}
         onKeyDown={onKeyDown}
         placeholder="＋ Dump to inbox… (c) · Shift+Enter for details · Enter to save"
-        className="w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm leading-5 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+        className="w-full resize-none rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm leading-5 text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
       />
       {saved && (
-        <span className="absolute right-3 top-2 text-xs font-medium text-emerald-600">✓ captured</span>
+        <span className="absolute right-3 top-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">✓ captured</span>
       )}
     </div>
   );

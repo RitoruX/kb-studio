@@ -8,38 +8,54 @@ export default function CardView({ task, showProject, onClick, innerRef, dragPro
   const config = useConfig();
   const due = dueMeta(task.due);
   const excerpt = toExcerpt(task.description);
+  const interactive = !!onClick && !overlay;
 
   return (
     <div
       ref={innerRef}
       {...dragProps}
       onClick={onClick}
+      // keyboard-first: cards are reachable by Tab (role/tabindex from dnd-kit on
+      // the board; set here for the static Today list) and open on Enter/Space.
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick(e);
+              }
+            }
+          : undefined
+      }
       className={[
-        'group rounded-lg border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow',
+        'group rounded-lg border border-line bg-surface p-2.5 shadow-card transition hover:border-line-strong hover:shadow-card-hover',
+        interactive ? 'active:scale-[0.99]' : '',
         grab ? 'cursor-grab active:cursor-grabbing' : onClick ? 'cursor-pointer' : '',
         dragging ? 'opacity-40' : '',
-        overlay ? 'rotate-2 shadow-lg cursor-grabbing' : '',
+        overlay ? 'rotate-2 shadow-raised cursor-grabbing' : '',
       ].join(' ')}
     >
-      <p className="text-sm font-medium leading-snug text-slate-800">{task.title}</p>
+      <p className="text-sm font-medium leading-snug text-ink">{task.title}</p>
 
       {excerpt && (
-        <p className="mt-1 max-h-20 overflow-hidden whitespace-pre-line text-xs leading-snug text-slate-500">
+        <p className="mt-1 max-h-20 overflow-hidden whitespace-pre-line text-xs leading-snug text-muted">
           {excerpt}
         </p>
       )}
 
       {(due || showProject) && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+        <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
           {due && (
             <span
               className={[
-                'rounded px-1.5 py-0.5 text-[11px] font-medium',
+                'rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
                 due.overdue
-                  ? 'bg-red-100 text-red-700'
+                  ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
                   : due.soon
-                    ? 'bg-amber-100 text-amber-700'
-                    : 'bg-slate-100 text-slate-500',
+                    ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
+                    : 'bg-panel text-muted',
               ].join(' ')}
             >
               {due.overdue ? '⚠ ' : '📅 '}
@@ -52,7 +68,7 @@ export default function CardView({ task, showProject, onClick, innerRef, dragPro
                 {task.project}
               </span>
             ) : (
-              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-400">
+              <span className="rounded bg-panel px-1.5 py-0.5 text-[11px] font-medium text-faint">
                 {config.noGroupLabel}
               </span>
             ))}

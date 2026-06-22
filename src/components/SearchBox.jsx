@@ -39,35 +39,35 @@ export default function SearchBox() {
   }, []);
 
   return (
-    <div ref={boxRef} className="relative w-72">
+    <div ref={boxRef} className="relative w-full sm:w-72">
       <input
         id="search-input"
         value={q}
         onChange={(e) => setQ(e.target.value)}
         onFocus={() => results.length && setOpen(true)}
         placeholder="🔍 Search the vault… (press /)"
-        className="w-full rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+        className="w-full rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
       />
 
       {open && q.trim().length >= 2 && (
-        <div className="absolute right-0 z-30 mt-1 max-h-[70vh] w-[28rem] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl">
+        <div className="absolute right-0 z-30 mt-1 max-h-[70vh] w-full overflow-y-auto rounded-xl border border-line bg-surface p-1 shadow-raised sm:w-[28rem]">
           {loading && results.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-slate-400">Searching…</p>
+            <p className="px-3 py-2 text-sm text-faint">Searching…</p>
           ) : results.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-slate-400">No matches.</p>
+            <p className="px-3 py-2 text-sm text-faint">No matches.</p>
           ) : (
             results.map((r) => (
               <a
                 key={r.file}
                 href={obsidianHref(r.file)}
-                className="block rounded-lg px-3 py-2 hover:bg-slate-50"
+                className="block rounded-lg px-3 py-2 transition hover:bg-panel"
                 title="Open in Obsidian"
               >
                 <div className="flex items-baseline justify-between gap-2">
-                  <span className="truncate text-sm font-medium text-slate-800">{r.title}</span>
-                  <span className="shrink-0 text-[11px] text-slate-400">{r.file}</span>
+                  <span className="truncate text-sm font-medium text-ink">{r.title}</span>
+                  <span className="shrink-0 text-[11px] text-faint">{r.file}</span>
                 </div>
-                {r.snippet && <p className="mt-0.5 truncate text-xs text-slate-500">{r.snippet}</p>}
+                {r.snippet && <p className="mt-0.5 truncate text-xs text-muted">{r.snippet}</p>}
               </a>
             ))
           )}

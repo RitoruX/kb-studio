@@ -25,25 +25,25 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-slate-900/30" onClick={onClose}>
-      <div className="flex h-full w-full max-w-sm flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center gap-2 border-b border-slate-200 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-800">📥 Inbox — triage</h2>
-          <span className="text-xs text-slate-400">{items.length} open</span>
-          <button onClick={onClose} className="ml-auto rounded p-1 text-slate-400 hover:bg-slate-100">
+    <div className="fixed inset-0 z-20 flex justify-end bg-stone-900/30" onClick={onClose}>
+      <div className="flex h-full w-full max-w-sm flex-col bg-surface shadow-raised" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+          <h2 className="text-sm font-semibold tracking-tight text-ink">📥 Inbox — triage</h2>
+          <span className="text-xs tabular-nums text-faint">{items.length} open</span>
+          <button onClick={onClose} className="ml-auto rounded p-1 text-faint transition hover:bg-panel hover:text-ink">
             ✕
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-3">
           {items.length === 0 ? (
-            <p className="px-1 py-2 text-sm text-slate-400">
+            <p className="px-1 py-2 text-sm text-faint">
               Nothing to triage. Capture with the “Dump to inbox” box.
             </p>
           ) : (
             <ul className="space-y-2">
               {items.map((it) => (
-                <li key={it.raw} className="rounded-lg border border-slate-200 p-2.5">
+                <li key={it.raw} className="rounded-lg border border-line p-2.5">
                   {editingRaw === it.raw ? (
                     <div>
                       <textarea
@@ -55,30 +55,30 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
                           if (e.key === 'Escape') setEditingRaw(null);
                           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) saveEdit(it);
                         }}
-                        className="w-full resize-none rounded-md border border-slate-300 px-2 py-1.5 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                        className="w-full resize-none rounded-md border border-line-strong bg-surface px-2 py-1.5 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
                       />
                       <div className="mt-1.5 flex gap-2">
                         <button
                           onClick={() => saveEdit(it)}
-                          className="rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-500"
+                          className="rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-fg transition hover:bg-accent/90"
                         >
                           Save
                         </button>
                         <button
                           onClick={() => setEditingRaw(null)}
-                          className="rounded-md px-2 py-1 text-xs text-slate-500 hover:bg-slate-100"
+                          className="rounded-md px-2 py-1 text-xs text-muted transition hover:bg-panel hover:text-ink"
                         >
                           Cancel
                         </button>
-                        <span className="ml-auto self-center text-[10px] text-slate-400">⌘↵ save · Esc cancel</span>
+                        <span className="ml-auto self-center text-[10px] text-faint">⌘↵ save · Esc cancel</span>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="mb-2">
-                        <p className="text-sm text-slate-700">{it.text}</p>
+                        <p className="text-sm text-ink">{it.text}</p>
                         {it.details?.length > 0 && (
-                          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-slate-500">
+                          <ul className="mt-1 list-disc space-y-0.5 pl-5 text-xs text-muted">
                             {it.details.map((d, i) => (
                               <li key={i}>{d}</li>
                             ))}
@@ -88,28 +88,28 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
                       <div className="flex flex-wrap items-center gap-1.5">
                         <button
                           onClick={() => onPromote(it)}
-                          className="rounded-md bg-slate-800 px-2 py-1 text-xs font-medium text-white hover:bg-slate-700"
+                          className="rounded-md bg-accent px-2 py-1 text-xs font-medium text-accent-fg transition hover:bg-accent/90"
                         >
                           → Task
                         </button>
                         <button
                           onClick={() => onFileNote(it)}
                           title="File into the knowledge base as a note"
-                          className="rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                          className="rounded-md border border-line-strong px-2 py-1 text-xs font-medium text-ink transition hover:bg-panel"
                         >
                           → Note
                         </button>
                         <button
                           onClick={() => startEdit(it)}
                           title="Edit this item"
-                          className="rounded-md px-1.5 py-1 text-xs text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                          className="rounded-md px-1.5 py-1 text-xs text-faint transition hover:bg-panel hover:text-ink"
                         >
                           ✎
                         </button>
                         <button
                           onClick={() => onRemove(it)}
                           title="Remove from inbox"
-                          className="ml-auto rounded-md px-1.5 py-1 text-sm text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          className="ml-auto rounded-md px-1.5 py-1 text-sm text-faint transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
                           ✕
                         </button>
@@ -122,7 +122,7 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
           )}
         </div>
 
-        <p className="border-t border-slate-200 px-4 py-2 text-[11px] text-slate-400">
+        <p className="border-t border-line px-4 py-2 text-[11px] text-faint">
           Items are open <code>- [ ]</code> lines in <code>_Inbox.md</code>. <b>→ Task</b> files it into a
           project; <b>→ Note</b> saves it to the KB; <b>✎</b> edits it in place.
         </p>

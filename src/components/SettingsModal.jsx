@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { COLOR_NAMES, statusDot } from '../constants';
 
 const field =
-  'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100';
-const label = 'block text-xs font-medium text-slate-500 mb-1';
+  'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25';
+const label = 'block text-xs font-medium text-muted mb-1';
 
 export default function SettingsModal({ config, onSave, onClose }) {
   const [statuses, setStatuses] = useState(config.statuses.map((s) => ({ ...s })));
@@ -59,12 +59,12 @@ export default function SettingsModal({ config, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-start justify-center bg-slate-900/40 p-4 pt-12" onClick={onClose}>
+    <div className="fixed inset-0 z-30 flex items-start justify-center bg-stone-900/40 p-4 pt-12" onClick={onClose}>
       <div
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-surface p-4 shadow-raised sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-4 text-base font-semibold text-slate-800">Settings</h3>
+        <h3 className="mb-4 text-base font-semibold tracking-tight text-ink">Settings</h3>
 
         <div className="space-y-5">
           {/* statuses */}
@@ -81,7 +81,7 @@ export default function SettingsModal({ config, onSave, onClose }) {
                     placeholder="Status name"
                   />
                   <select
-                    className="rounded-lg border border-slate-300 px-2 py-2 text-sm"
+                    className="rounded-lg border border-line-strong bg-surface px-2 py-2 text-sm text-ink"
                     value={s.color}
                     onChange={(e) => setStatus(i, { color: e.target.value })}
                   >
@@ -89,27 +89,27 @@ export default function SettingsModal({ config, onSave, onClose }) {
                       <option key={c}>{c}</option>
                     ))}
                   </select>
-                  <button onClick={() => move(i, -1)} className="px-1 text-slate-400 hover:text-slate-700" title="Up">
+                  <button onClick={() => move(i, -1)} className="px-1 text-faint transition hover:text-ink" title="Up">
                     ↑
                   </button>
-                  <button onClick={() => move(i, 1)} className="px-1 text-slate-400 hover:text-slate-700" title="Down">
+                  <button onClick={() => move(i, 1)} className="px-1 text-faint transition hover:text-ink" title="Down">
                     ↓
                   </button>
-                  <button onClick={() => removeStatus(i)} className="px-1 text-slate-400 hover:text-red-600" title="Remove">
+                  <button onClick={() => removeStatus(i)} className="px-1 text-faint transition hover:text-red-600 dark:hover:text-red-400" title="Remove">
                     ✕
                   </button>
                 </div>
               ))}
             </div>
-            <button onClick={addStatus} className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-700">
+            <button onClick={addStatus} className="mt-2 text-sm font-medium text-accent transition hover:text-accent/80">
               + Add status
             </button>
-            <p className="mt-1 text-[11px] text-slate-400">
+            <p className="mt-1 text-[11px] text-faint">
               Renaming a status here does not rewrite existing task files; move those cards over after.
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label className={label}>“Done” status</label>
               <select className={field} value={doneStatus} onChange={(e) => setDoneStatus(e.target.value)}>
@@ -158,20 +158,20 @@ export default function SettingsModal({ config, onSave, onClose }) {
             />
           </div>
 
-          <p className="rounded-lg bg-slate-50 px-3 py-2 text-[11px] text-slate-500">
+          <p className="rounded-lg bg-panel px-3 py-2 text-[11px] text-muted">
             Structural settings (how tasks are detected, where they’re stored, grouping) live in
             <code className="mx-1">kb-studio.config.json</code> in your vault — see the README presets.
           </p>
         </div>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">
+          <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-muted transition hover:bg-panel hover:text-ink">
             Cancel
           </button>
           <button
             onClick={save}
             disabled={busy}
-            className="rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-fg transition hover:bg-accent/90 disabled:opacity-40"
           >
             {busy ? 'Saving…' : 'Save'}
           </button>

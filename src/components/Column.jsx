@@ -22,18 +22,18 @@ export default function Column({ status, tasks, onCreate, onOpen, showProject })
   }
 
   return (
-    <div className="flex w-72 shrink-0 flex-col">
-      <div className="mb-2 flex items-center gap-2 px-1">
+    <div className="flex w-64 shrink-0 flex-col">
+      <div className="mb-1.5 flex items-center gap-2 px-1">
         <span className={`h-2.5 w-2.5 rounded-full ${statusDot(color)}`} />
-        <h2 className="text-sm font-semibold text-slate-700">{status}</h2>
-        <span className="text-xs text-slate-400">{tasks.length}</span>
+        <h2 className="text-sm font-semibold tracking-tight text-ink">{status}</h2>
+        <span className="text-xs tabular-nums text-faint">{tasks.length}</span>
       </div>
 
       <div
         ref={setNodeRef}
         className={[
-          'flex min-h-24 flex-1 flex-col gap-2 rounded-xl border p-2 transition',
-          isOver ? 'border-blue-300 bg-blue-50/60' : 'border-slate-200 bg-slate-100/60',
+          'flex min-h-24 flex-1 flex-col gap-1.5 rounded-xl border p-1.5 transition',
+          isOver ? 'border-accent/50 bg-accent-weak/60' : 'border-line bg-panel/60',
         ].join(' ')}
       >
         {sorted.map((t) => (
@@ -59,12 +59,12 @@ export default function Column({ status, tasks, onCreate, onOpen, showProject })
               setAdding(false);
             }}
             placeholder="Task title… (Enter)"
-            className="rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            className="rounded-lg border border-line-strong bg-surface px-2.5 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
           />
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="mt-auto rounded-lg border border-dashed border-slate-300 py-2 text-sm text-slate-400 hover:border-slate-400 hover:text-slate-600"
+            className="mt-auto rounded-lg border border-dashed border-line-strong py-2 text-sm text-faint transition hover:border-accent/50 hover:text-muted"
           >
             + Add task
           </button>

@@ -3,11 +3,11 @@ import { dueBucket } from '../constants';
 import { useConfig } from '../ConfigContext';
 
 const SECTIONS = [
-  { key: 'overdue', title: 'Overdue', icon: '⚠', tone: 'text-red-600' },
-  { key: 'today', title: 'Due today', icon: '📅', tone: 'text-amber-600' },
-  { key: 'week', title: 'This week', icon: '🗓', tone: 'text-slate-600' },
-  { key: 'doing', title: 'In progress', icon: '🔵', tone: 'text-blue-600' },
-  { key: 'review', title: 'In review — monitor', icon: '👀', tone: 'text-cyan-700' },
+  { key: 'overdue', title: 'Overdue', icon: '⚠', tone: 'text-red-600 dark:text-red-400' },
+  { key: 'today', title: 'Due today', icon: '📅', tone: 'text-amber-600 dark:text-amber-400' },
+  { key: 'week', title: 'This week', icon: '🗓', tone: 'text-muted' },
+  { key: 'doing', title: 'In progress', icon: '🔵', tone: 'text-blue-600 dark:text-blue-400' },
+  { key: 'review', title: 'In review — monitor', icon: '👀', tone: 'text-cyan-700 dark:text-cyan-400' },
 ];
 
 export default function TodayView({ tasks, onOpen }) {
@@ -25,7 +25,7 @@ export default function TodayView({ tasks, onOpen }) {
   const total = Object.values(groups).reduce((n, g) => n + g.length, 0);
 
   if (total === 0) {
-    return <p className="text-slate-400">Nothing urgent — you’re clear. 🎉</p>;
+    return <p className="text-faint">Nothing urgent — you’re clear. 🎉</p>;
   }
 
   return (
@@ -39,7 +39,7 @@ export default function TodayView({ tasks, onOpen }) {
             <h2 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${s.tone}`}>
               <span>{s.icon}</span>
               {s.title}
-              <span className="text-slate-400">{items.length}</span>
+              <span className="tabular-nums text-faint">{items.length}</span>
             </h2>
             <div className="flex flex-col gap-2">
               {sorted.map((t) => (

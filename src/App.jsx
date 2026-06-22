@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import * as api from './api';
 import { DEFAULT_CONFIG, dueBucket } from './constants';
 import { ConfigContext } from './ConfigContext';
@@ -12,6 +12,8 @@ import InboxDrawer from './components/InboxDrawer';
 import TodayView from './components/TodayView';
 import HeadsUp from './components/HeadsUp';
 import SettingsModal from './components/SettingsModal';
+import BoardSkeleton from './components/BoardSkeleton';
+import ThemeToggle from './components/ThemeToggle';
 
 export default function App() {
   const [tasks, setTasks] = useState([]);
@@ -55,7 +57,12 @@ export default function App() {
     loadInbox();
   }, [refresh, loadInbox]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+  // Mouse drags after an 8px move; touch needs a 200ms hold so a swipe still
+  // scrolls the board instead of grabbing a card.
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  );
 
   // statuses/groups are derived from config + the live task set
   const statusNames = config.statuses.map((s) => s.name);
@@ -212,12 +219,12 @@ export default function App() {
 
   return (
     <ConfigContext.Provider value={config}>
-      <div className="min-h-screen bg-slate-50 text-slate-800">
-        <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3">
-            <h1 className="text-lg font-semibold">📋 KB Studio</h1>
+      <div className="min-h-dvh bg-canvas text-ink">
+        <header className="sticky top-0 z-10 border-b border-line bg-surface/80 backdrop-blur">
+          <div className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-5">
+            <h1 className="text-lg font-semibold tracking-tight">📋 KB Studio</h1>
 
-            <div className="flex rounded-lg bg-slate-100 p-0.5 text-sm">
+            <div className="flex rounded-lg bg-panel p-0.5 text-sm">
               {[
                 ['board', 'Board'],
                 ['today', 'Today'],
@@ -227,7 +234,7 @@ export default function App() {
                   onClick={() => setView(v)}
                   className={[
                     'rounded-md px-3 py-1 font-medium transition',
-                    view === v ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700',
+                    view === v ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink',
                   ].join(' ')}
                 >
                   {lbl}
@@ -237,11 +244,11 @@ export default function App() {
 
             <button
               onClick={() => setInboxOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600 hover:bg-slate-200"
+              className="flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
             >
               📥 Inbox
               {inbox.length > 0 && (
-                <span className="rounded-full bg-amber-500 px-1.5 text-[11px] font-semibold text-white">
+                <span className="rounded-full bg-accent px-1.5 text-[11px] font-semibold tabular-nums text-accent-fg">
                   {inbox.length}
                 </span>
               )}
@@ -251,16 +258,18 @@ export default function App() {
               <button
                 onClick={enableNotify}
                 title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
-                className="rounded-full bg-slate-100 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-200"
+                className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
               >
                 {notify === 'granted' ? '🔔' : '🔕'}
               </button>
             )}
 
+            <ThemeToggle />
+
             <button
               onClick={() => setSettingsOpen(true)}
               title="Settings"
-              className="rounded-full bg-slate-100 px-2.5 py-1 text-sm text-slate-600 hover:bg-slate-200"
+              className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
             >
               ⚙
             </button>
@@ -272,7 +281,9 @@ export default function App() {
                   onClick={() => setFilter(p)}
                   className={[
                     'rounded-full px-3 py-1 text-sm transition',
-                    filter === p ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    filter === p
+                      ? 'bg-accent text-accent-fg'
+                      : 'bg-panel text-muted hover:bg-line hover:text-ink',
                   ].join(' ')}
                 >
                   {p}
@@ -280,15 +291,15 @@ export default function App() {
               ))}
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-slate-100 px-5 py-2">
+          <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 py-2 sm:px-5">
             <CaptureBar onCapture={handleCapture} />
             <SearchBox />
           </div>
         </header>
 
-        <main className="p-5">
+        <main className="p-3 sm:p-5">
           {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
               Can’t reach the API: {error}. Is the server running (<code>npm run dev</code>)?
             </div>
           )}
@@ -303,7 +314,7 @@ export default function App() {
           )}
 
           {loading ? (
-            <p className="text-slate-400">Loading…</p>
+            <BoardSkeleton />
           ) : view === 'today' ? (
             <TodayView tasks={visible} onOpen={setEditing} />
           ) : (
@@ -314,7 +325,7 @@ export default function App() {
               onDragEnd={onDragEnd}
               onDragCancel={() => setActiveId(null)}
             >
-              <div className="flex gap-4 overflow-x-auto pb-4">
+              <div className="flex gap-3 overflow-x-auto pb-4">
                 {boardStatuses.map((s) => (
                   <Column
                     key={s}

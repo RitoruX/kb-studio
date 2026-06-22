@@ -1,3 +1,10 @@
 node_modules
 dist
 .env
+
+# AI-DLC workflow tooling — local only, kept out of the public repo
+# (third-party skills + an overlay that references private vault paths)
+.claude/
+.aidlc/
+.agents/
+skills-lock.json
