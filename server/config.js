@@ -17,6 +17,8 @@ export const DEFAULTS = {
   // where new task files are written; {group} -> the group value (or noGroupFolder)
   newTaskPath: 'Tasks/{group}',
   noGroupFolder: '_Unsorted',
+  // where "file as note" sends non-task inbox items (a standalone .md per item)
+  notePath: 'Notes',
   // frontmatter field names + how the grouping value is derived
   fields: {
     title: 'title',

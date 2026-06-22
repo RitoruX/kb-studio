@@ -30,8 +30,15 @@ export const deleteTask = (id) =>
   fetch('/api/tasks?id=' + encodeURIComponent(id), { method: 'DELETE' }).then(json);
 
 export const getInbox = () => fetch('/api/inbox').then(json);
-export const captureInbox = (text) => post('/api/inbox', { text });
+export const captureInbox = (text, details) => post('/api/inbox', { text, details });
+export const updateInbox = (raw, text, details) =>
+  fetch('/api/inbox', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw, text, details }),
+  }).then(json);
 export const promoteInbox = (payload) => post('/api/inbox/promote', payload);
+export const fileInboxNote = (payload) => post('/api/inbox/file-note', payload);
 export const deleteInbox = (raw) =>
   fetch('/api/inbox?raw=' + encodeURIComponent(raw), { method: 'DELETE' }).then(json);
 export const searchVault = (q) => fetch('/api/search?q=' + encodeURIComponent(q)).then(json);

@@ -104,13 +104,24 @@ export default function App() {
     setEditing(null);
   }
 
-  async function handleCapture(text) {
-    await api.captureInbox(text);
+  async function handleCapture(text, details) {
+    await api.captureInbox(text, details);
     loadInbox();
   }
 
   async function handleRemoveInbox(item) {
     await api.deleteInbox(item.raw);
+    loadInbox();
+  }
+
+  async function handleEditInbox(item, text, details) {
+    await api.updateInbox(item.raw, text, details);
+    loadInbox();
+  }
+
+  async function handleFileNote(item) {
+    const body = (item.details || []).map((d) => `- ${d}`).join('\n');
+    await api.fileInboxNote({ raw: item.raw, title: item.text, body });
     loadInbox();
   }
 
@@ -140,7 +151,7 @@ export default function App() {
       isNew: true,
       promoteRaw: item.raw,
       title: item.text,
-      description: '',
+      description: (item.details || []).map((d) => `- ${d}`).join('\n'),
       due: '',
       status: statusNames[0],
       project: defaultProject(),
@@ -327,6 +338,8 @@ export default function App() {
           items={inbox}
           onClose={() => setInboxOpen(false)}
           onPromote={startPromote}
+          onFileNote={handleFileNote}
+          onEdit={handleEditInbox}
           onRemove={handleRemoveInbox}
         />
 
