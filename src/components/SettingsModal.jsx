@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ChevronUp, ChevronDown, XClose } from '@untitledui/icons';
 import { COLOR_NAMES, statusDot } from '../constants';
 
 const field =
@@ -11,6 +12,9 @@ export default function SettingsModal({ config, onSave, onClose }) {
   const [groupLabel, setGroupLabel] = useState(config.groupLabel);
   const [noGroupLabel, setNoGroupLabel] = useState(config.noGroupLabel);
   const [obsidianVault, setObsidianVault] = useState(config.obsidianVault || '');
+  const [weeklyAuthor, setWeeklyAuthor] = useState(config.weeklyAuthor || '');
+  const [statusNotes, setStatusNotes] = useState(config.weeklyStatusNotes || '');
+  const [blockedLabel, setBlockedLabel] = useState(config.weeklyBlockedLabel || 'Blocked');
   const [activeStatuses, setActiveStatuses] = useState((config.activeStatuses || []).join(', '));
   const [reviewStatuses, setReviewStatuses] = useState((config.reviewStatuses || []).join(', '));
   const [inboxPath, setInboxPath] = useState(config.inbox?.path || '');
@@ -45,6 +49,9 @@ export default function SettingsModal({ config, onSave, onClose }) {
         groupLabel,
         noGroupLabel,
         obsidianVault: obsidianVault.trim(),
+        weeklyAuthor: weeklyAuthor.trim(),
+        weeklyStatusNotes: statusNotes,
+        weeklyBlockedLabel: blockedLabel.trim(),
         activeStatuses: csv(activeStatuses),
         reviewStatuses: csv(reviewStatuses),
         inbox: { path: inboxPath.trim(), heading: inboxHeading },
@@ -59,12 +66,12 @@ export default function SettingsModal({ config, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-30 flex items-start justify-center bg-stone-900/40 p-4 pt-12" onClick={onClose}>
+    <div className="overlay-in fixed inset-0 z-30 flex items-start justify-center bg-stone-900/40 p-4 pt-12" onClick={onClose}>
       <div
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-surface p-4 shadow-raised sm:p-5"
+        className="pop-in flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-surface p-4 shadow-raised sm:p-5"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="mb-4 text-base font-semibold tracking-tight text-ink">Settings</h3>
+        <h3 className="mb-4 font-serif text-lg font-semibold tracking-tight text-ink">Settings</h3>
 
         <div className="space-y-5">
           {/* statuses */}
@@ -90,13 +97,13 @@ export default function SettingsModal({ config, onSave, onClose }) {
                     ))}
                   </select>
                   <button onClick={() => move(i, -1)} className="px-1 text-faint transition hover:text-ink" title="Up">
-                    ↑
+                    <ChevronUp size={16} />
                   </button>
                   <button onClick={() => move(i, 1)} className="px-1 text-faint transition hover:text-ink" title="Down">
-                    ↓
+                    <ChevronDown size={16} />
                   </button>
                   <button onClick={() => removeStatus(i)} className="px-1 text-faint transition hover:text-red-600 dark:hover:text-red-400" title="Remove">
-                    ✕
+                    <XClose size={16} />
                   </button>
                 </div>
               ))}
@@ -146,6 +153,34 @@ export default function SettingsModal({ config, onSave, onClose }) {
               <label className={label}>Capture heading</label>
               <input className={field} value={inboxHeading} onChange={(e) => setInboxHeading(e.target.value)} />
             </div>
+            <div>
+              <label className={label}>Weekly summary author</label>
+              <input
+                className={field}
+                value={weeklyAuthor}
+                onChange={(e) => setWeeklyAuthor(e.target.value)}
+                placeholder="Name shown atop the weekly summary"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className={label}>Weekly status notes (one per line: <code>Status = normal | end-of-week</code>)</label>
+            <textarea
+              className={`${field} resize-y font-mono text-xs`}
+              rows={3}
+              value={statusNotes}
+              onChange={(e) => setStatusNotes(e.target.value)}
+              placeholder={'To do = TODO | ยังไม่ได้ดำเนินการ\nDoing = กำลังดำเนินการ'}
+            />
+            <p className="mt-1 text-[11px] text-faint">
+              Appended after each task in the weekly summary. Blocked tasks instead show the prefix below + their reason.
+            </p>
+          </div>
+
+          <div>
+            <label className={label}>Blocked note prefix</label>
+            <input className={field} value={blockedLabel} onChange={(e) => setBlockedLabel(e.target.value)} />
           </div>
 
           <div>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Inbox01, XClose, Edit01 } from '@untitledui/icons';
 
 // item {raw, text, details[]} <-> the editable textarea form (title line + "  - " bullets)
 const toText = (it) => [it.text, ...(it.details || []).map((d) => `  - ${d}`)].join('\n');
@@ -9,10 +10,18 @@ function fromText(text) {
   return { title, details };
 }
 
-export default function InboxDrawer({ open, items, onClose, onPromote, onFileNote, onRemove, onEdit }) {
+export default function InboxDrawer({ open, items, projects = [], onClose, onPromote, onFileNote, onRemove, onEdit }) {
   const [editingRaw, setEditingRaw] = useState(null);
   const [draft, setDraft] = useState('');
+  const [filingRaw, setFilingRaw] = useState(null);
+  const [fileProject, setFileProject] = useState('');
   if (!open) return null;
+
+  function fileNow(it) {
+    onFileNote(it, fileProject.trim());
+    setFilingRaw(null);
+    setFileProject('');
+  }
 
   function startEdit(it) {
     setEditingRaw(it.raw);
@@ -25,13 +34,13 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
   }
 
   return (
-    <div className="fixed inset-0 z-20 flex justify-end bg-stone-900/30" onClick={onClose}>
-      <div className="flex h-full w-full max-w-sm flex-col bg-surface shadow-raised" onClick={(e) => e.stopPropagation()}>
+    <div className="overlay-in fixed inset-0 z-20 flex justify-end bg-stone-900/30" onClick={onClose}>
+      <div className="drawer-in flex h-full w-full max-w-sm flex-col bg-surface shadow-raised" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2 border-b border-line px-4 py-3">
-          <h2 className="text-sm font-semibold tracking-tight text-ink">📥 Inbox — triage</h2>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold tracking-tight text-ink"><Inbox01 size={15} /> Inbox — triage</h2>
           <span className="text-xs tabular-nums text-faint">{items.length} open</span>
           <button onClick={onClose} className="ml-auto rounded p-1 text-faint transition hover:bg-panel hover:text-ink">
-            ✕
+            <XClose size={16} />
           </button>
         </div>
 
@@ -93,27 +102,62 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
                           → Task
                         </button>
                         <button
-                          onClick={() => onFileNote(it)}
+                          onClick={() => {
+                            setFilingRaw(filingRaw === it.raw ? null : it.raw);
+                            setFileProject('');
+                          }}
                           title="File into the knowledge base as a note"
-                          className="rounded-md border border-line-strong px-2 py-1 text-xs font-medium text-ink transition hover:bg-panel"
+                          className={[
+                            'rounded-md border px-2 py-1 text-xs font-medium transition',
+                            filingRaw === it.raw
+                              ? 'border-accent bg-accent-weak text-accent'
+                              : 'border-line-strong text-ink hover:bg-panel',
+                          ].join(' ')}
                         >
                           → Note
                         </button>
                         <button
                           onClick={() => startEdit(it)}
                           title="Edit this item"
-                          className="rounded-md px-1.5 py-1 text-xs text-faint transition hover:bg-panel hover:text-ink"
+                          className="rounded-md px-1.5 py-1 text-faint transition hover:bg-panel hover:text-ink"
                         >
-                          ✎
+                          <Edit01 size={14} />
                         </button>
                         <button
                           onClick={() => onRemove(it)}
                           title="Remove from inbox"
-                          className="ml-auto rounded-md px-1.5 py-1 text-sm text-faint transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                          className="ml-auto rounded-md px-1.5 py-1 text-faint transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400"
                         >
-                          ✕
+                          <XClose size={15} />
                         </button>
                       </div>
+
+                      {filingRaw === it.raw && (
+                        <div className="mt-2 flex items-center gap-1.5">
+                          <input
+                            autoFocus
+                            list="kb-inbox-projects"
+                            value={fileProject}
+                            onChange={(e) => setFileProject(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                fileNow(it);
+                              } else if (e.key === 'Escape') {
+                                setFilingRaw(null);
+                              }
+                            }}
+                            placeholder="Project for this note (optional)"
+                            className="flex-1 rounded-md border border-line-strong bg-surface px-2 py-1 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
+                          />
+                          <button
+                            onClick={() => fileNow(it)}
+                            className="rounded-md bg-accent px-2.5 py-1 text-xs font-medium text-accent-fg transition hover:bg-accent/90"
+                          >
+                            File
+                          </button>
+                        </div>
+                      )}
                     </>
                   )}
                 </li>
@@ -122,9 +166,16 @@ export default function InboxDrawer({ open, items, onClose, onPromote, onFileNot
           )}
         </div>
 
+        <datalist id="kb-inbox-projects">
+          {projects.map((p) => (
+            <option key={p} value={p} />
+          ))}
+        </datalist>
+
         <p className="border-t border-line px-4 py-2 text-[11px] text-faint">
           Items are open <code>- [ ]</code> lines in <code>_Inbox.md</code>. <b>→ Task</b> files it into a
-          project; <b>→ Note</b> saves it to the KB; <b>✎</b> edits it in place.
+          project; <b>→ Note</b> saves it to the KB (optionally tagged with a project); the edit button changes
+          it in place.
         </p>
       </div>
     </div>

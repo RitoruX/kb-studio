@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import * as api from './api';
-import { DEFAULT_CONFIG, dueBucket } from './constants';
+import { DEFAULT_CONFIG, dueBucket, weekRange, isoWeekLabel } from './constants';
+import { weeklyTasks, formatWeekly } from './weekly';
 import { ConfigContext } from './ConfigContext';
 import Column from './components/Column';
 import Card from './components/Card';
@@ -9,11 +10,15 @@ import TaskModal from './components/TaskModal';
 import CaptureBar from './components/CaptureBar';
 import SearchBox from './components/SearchBox';
 import InboxDrawer from './components/InboxDrawer';
-import TodayView from './components/TodayView';
+import WeekView from './components/WeekView';
 import HeadsUp from './components/HeadsUp';
 import SettingsModal from './components/SettingsModal';
 import BoardSkeleton from './components/BoardSkeleton';
 import ThemeToggle from './components/ThemeToggle';
+import { ClipboardCheck, Inbox01, Bell01, BellOff01, Settings01, XClose } from '@untitledui/icons';
+import Toaster from './components/Toaster';
+import HelpModal from './components/HelpModal';
+import { toast } from './toast';
 
 export default function App() {
   const [tasks, setTasks] = useState([]);
@@ -26,7 +31,9 @@ export default function App() {
   const [inbox, setInbox] = useState([]);
   const [inboxOpen, setInboxOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [view, setView] = useState('board'); // 'board' | 'today'
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [weeklyDue, setWeeklyDue] = useState(null); // null | 'Friday' | 'Saturday'
+  const [view, setView] = useState('board'); // 'board' | 'week'
   const [dismissedHeadsUp, setDismissedHeadsUp] = useState(false);
   const [notify, setNotify] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
   const notifiedRef = useRef(false);
@@ -91,24 +98,33 @@ export default function App() {
     try {
       const updated = await api.updateTask({ id: task.id, status: newStatus });
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
+      toast(`Moved to ${newStatus}`);
     } catch {
+      toast('Couldn’t move — restored', { type: 'error' });
       refresh();
     }
   }
 
   async function handleSave(form) {
-    if (editing?.promoteRaw) {
-      const created = await api.promoteInbox({ raw: editing.promoteRaw, ...form });
-      setTasks((prev) => [...prev, created]);
-      loadInbox();
-    } else if (editing?.isNew) {
-      const created = await api.createTask(form);
-      setTasks((prev) => [...prev, created]);
-    } else {
-      const updated = await api.updateTask({ id: editing.id, ...form });
-      setTasks((prev) => prev.map((t) => (t.id === editing.id ? updated : t)));
+    try {
+      if (editing?.promoteRaw) {
+        const created = await api.promoteInbox({ raw: editing.promoteRaw, ...form });
+        setTasks((prev) => [...prev, created]);
+        loadInbox();
+        toast('Added to board');
+      } else if (editing?.isNew) {
+        const created = await api.createTask(form);
+        setTasks((prev) => [...prev, created]);
+        toast('Task created');
+      } else {
+        const updated = await api.updateTask({ id: editing.id, ...form });
+        setTasks((prev) => prev.map((t) => (t.id === editing.id ? updated : t)));
+        toast('Saved');
+      }
+      setEditing(null); // closes the modal only on success — errors keep your edits
+    } catch (e) {
+      toast(`Couldn’t save — ${e.message || e}`, { type: 'error' });
     }
-    setEditing(null);
   }
 
   async function handleCapture(text, details) {
@@ -119,6 +135,7 @@ export default function App() {
   async function handleRemoveInbox(item) {
     await api.deleteInbox(item.raw);
     loadInbox();
+    toast('Removed from inbox', { type: 'info' });
   }
 
   async function handleEditInbox(item, text, details) {
@@ -126,10 +143,11 @@ export default function App() {
     loadInbox();
   }
 
-  async function handleFileNote(item) {
+  async function handleFileNote(item, project = '') {
     const body = (item.details || []).map((d) => `- ${d}`).join('\n');
-    await api.fileInboxNote({ raw: item.raw, title: item.text, body });
+    const r = await api.fileInboxNote({ raw: item.raw, title: item.text, body, project });
     loadInbox();
+    toast(`Filed to ${r.file}`);
   }
 
   async function handlePatch(id, patch) {
@@ -137,11 +155,38 @@ export default function App() {
     setTasks((prev) => prev.map((t) => (t.id === id ? updated : t)));
   }
 
+  const toggleBlocked = (task) => handlePatch(task.id, { blocked: !task.blocked });
+
   async function saveSettings(partial) {
-    const next = await api.updateConfig(partial);
-    setConfig(next);
-    setSettingsOpen(false);
-    refresh(); // task discovery / grouping may have changed
+    try {
+      const next = await api.updateConfig(partial);
+      setConfig(next);
+      setSettingsOpen(false);
+      refresh(); // task discovery / grouping may have changed
+      toast('Settings saved');
+    } catch (e) {
+      toast(`Couldn’t save settings — ${e.message || e}`, { type: 'error' });
+    }
+  }
+
+  // one-click save of the current week's summary (from the Fri/Sat reminder banner)
+  async function saveWeeklyNow() {
+    const { start, end } = weekRange();
+    const text = formatWeekly(weeklyTasks(tasks, config, start, end, true), {
+      author: config.weeklyAuthor,
+      start,
+      end,
+      noGroupLabel: config.noGroupLabel,
+      config,
+      endOfWeek: [5, 6].includes(new Date().getDay()),
+    });
+    try {
+      const r = await api.saveWeekly(isoWeekLabel(), text);
+      toast(r.existed ? 'Weekly summary already saved' : `Saved ${r.file}`);
+      setWeeklyDue(null);
+    } catch (e) {
+      toast(`Couldn’t save summary — ${e.message || e}`, { type: 'error' });
+    }
   }
 
   async function enableNotify() {
@@ -166,9 +211,31 @@ export default function App() {
   }
 
   async function handleDelete(id) {
+    const task = tasks.find((t) => t.id === id);
     await api.deleteTask(id);
     setTasks((prev) => prev.filter((t) => t.id !== id));
     setEditing(null);
+    toast('Task deleted', {
+      type: 'info',
+      duration: 7000, // give Undo a beat longer
+      action: task && {
+        label: 'Undo',
+        onClick: async () => {
+          // recreate the note from the captured task (new file, same content)
+          const restored = await api.createTask({
+            title: task.title,
+            description: task.description,
+            status: task.status,
+            due: task.due,
+            project: task.project,
+            blocked: task.blocked,
+            blockReason: task.blockReason,
+          });
+          setTasks((prev) => [...prev, restored]);
+          toast('Task restored');
+        },
+      },
+    });
   }
 
   async function quickCreate(status, title) {
@@ -189,24 +256,31 @@ export default function App() {
       const el = e.target;
       const typing =
         el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.isContentEditable;
-      if (typing || editing || settingsOpen || e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key === 'c') {
+      if (typing || editing || settingsOpen || helpOpen || e.metaKey || e.ctrlKey || e.altKey) return;
+      // match the physical key (e.code), not the produced character — so shortcuts
+      // still work in a Thai (or any non-Latin) keyboard layout.
+      if (e.code === 'KeyC') {
         e.preventDefault();
         document.getElementById('capture-input')?.focus();
-      } else if (e.key === '/') {
+      } else if (e.code === 'Slash' && !e.shiftKey) {
         e.preventDefault();
         document.getElementById('search-input')?.focus();
-      } else if (e.key === 'n') {
+      } else if (e.code === 'KeyN') {
         e.preventDefault();
         setEditing({ isNew: true, status: statusNames[0], project: defaultProject(), title: '', description: '', due: '' });
-      } else if (e.key === 't') {
+      } else if (e.code === 'KeyT') {
         e.preventDefault();
-        setView((v) => (v === 'today' ? 'board' : 'today'));
+        setView((v) => (v === 'week' ? 'board' : 'week'));
+      } else if (e.code === 'Slash' && e.shiftKey) {
+        e.preventDefault();
+        setHelpOpen(true);
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [editing, settingsOpen, filter, statusNames.join()]);
+    // intentional: re-bind only on these; the handler reads fresh state via closures
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editing, settingsOpen, helpOpen, filter, statusNames.join()]);
 
   // one summary notification per app load if anything needs attention
   useEffect(() => {
@@ -217,17 +291,35 @@ export default function App() {
     }
   }, [notify, loading, overdueCount, todayCount]);
 
+  // Fri/Sat: nudge to save the weekly summary if it isn't saved yet
+  useEffect(() => {
+    if (loading) return;
+    const day = new Date().getDay(); // 5 = Fri, 6 = Sat
+    if (day !== 5 && day !== 6) return;
+    let cancelled = false;
+    api
+      .getWeeklyStatus(isoWeekLabel())
+      .then((r) => !cancelled && !r.exists && setWeeklyDue(day === 5 ? 'Friday' : 'Saturday'))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [loading]);
+
   return (
     <ConfigContext.Provider value={config}>
       <div className="min-h-dvh bg-canvas text-ink">
         <header className="sticky top-0 z-10 border-b border-line bg-surface/80 backdrop-blur">
           <div className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-5">
-            <h1 className="text-lg font-semibold tracking-tight">📋 KB Studio</h1>
+            <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <ClipboardCheck size={20} className="text-accent" />
+              <span className="font-serif">KB Studio</span>
+            </h1>
 
             <div className="flex rounded-lg bg-panel p-0.5 text-sm">
               {[
                 ['board', 'Board'],
-                ['today', 'Today'],
+                ['week', 'Weekly'],
               ].map(([v, lbl]) => (
                 <button
                   key={v}
@@ -246,9 +338,9 @@ export default function App() {
               onClick={() => setInboxOpen(true)}
               className="flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
             >
-              📥 Inbox
+              <Inbox01 size={15} /> Inbox
               {inbox.length > 0 && (
-                <span className="rounded-full bg-accent px-1.5 text-[11px] font-semibold tabular-nums text-accent-fg">
+                <span className="rounded-full bg-clay px-1.5 text-[11px] font-semibold tabular-nums text-clay-fg">
                   {inbox.length}
                 </span>
               )}
@@ -260,7 +352,7 @@ export default function App() {
                 title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
                 className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
               >
-                {notify === 'granted' ? '🔔' : '🔕'}
+                {notify === 'granted' ? <Bell01 size={15} /> : <BellOff01 size={15} />}
               </button>
             )}
 
@@ -269,9 +361,18 @@ export default function App() {
             <button
               onClick={() => setSettingsOpen(true)}
               title="Settings"
-              className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
+              className="rounded-full bg-panel px-2.5 py-1.5 text-sm text-muted transition hover:bg-line hover:text-ink"
             >
-              ⚙
+              <Settings01 size={15} />
+            </button>
+
+            <button
+              onClick={() => setHelpOpen(true)}
+              title="Keyboard shortcuts (?)"
+              aria-label="Keyboard shortcuts"
+              className="rounded-full bg-panel px-2.5 py-1 text-sm font-medium text-muted transition hover:bg-line hover:text-ink"
+            >
+              ?
             </button>
 
             <div className="ml-auto flex flex-wrap gap-1.5">
@@ -304,19 +405,49 @@ export default function App() {
             </div>
           )}
 
+          {weeklyDue && (
+            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-line-strong bg-clay-weak px-4 py-2.5 text-sm">
+              <span className="font-medium text-ink">
+                It’s {weeklyDue} — you haven’t saved this week’s summary yet.
+              </span>
+              <button
+                onClick={saveWeeklyNow}
+                className="rounded-md bg-clay px-2.5 py-1 text-xs font-semibold text-clay-fg transition hover:bg-clay/90"
+              >
+                Save now
+              </button>
+              <button
+                onClick={() => {
+                  setView('week');
+                  setWeeklyDue(null);
+                }}
+                className="rounded-md px-2 py-1 text-xs font-medium text-muted transition hover:text-ink"
+              >
+                Open This Week
+              </button>
+              <button
+                onClick={() => setWeeklyDue(null)}
+                className="ml-auto rounded p-1 text-faint transition hover:text-ink"
+                title="Dismiss"
+              >
+                <XClose size={15} />
+              </button>
+            </div>
+          )}
+
           {!dismissedHeadsUp && (
             <HeadsUp
               overdue={overdueCount}
               today={todayCount}
-              onView={() => setView('today')}
+              onView={() => setView('week')}
               onDismiss={() => setDismissedHeadsUp(true)}
             />
           )}
 
           {loading ? (
             <BoardSkeleton />
-          ) : view === 'today' ? (
-            <TodayView tasks={visible} onOpen={setEditing} />
+          ) : view === 'week' ? (
+            <WeekView tasks={visible} onOpen={setEditing} onToggleBlocked={toggleBlocked} />
           ) : (
             <DndContext
               sensors={sensors}
@@ -347,6 +478,7 @@ export default function App() {
         <InboxDrawer
           open={inboxOpen}
           items={inbox}
+          projects={groups}
           onClose={() => setInboxOpen(false)}
           onPromote={startPromote}
           onFileNote={handleFileNote}
@@ -366,6 +498,10 @@ export default function App() {
         )}
 
         {settingsOpen && <SettingsModal config={config} onSave={saveSettings} onClose={() => setSettingsOpen(false)} />}
+
+        {helpOpen && <HelpModal onClose={() => setHelpOpen(false)} />}
+
+        <Toaster />
       </div>
     </ConfigContext.Provider>
   );

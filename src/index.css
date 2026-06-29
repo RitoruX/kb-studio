@@ -23,13 +23,19 @@
   --color-ink:         var(--kb-ink);          /* primary text             */
   --color-muted:       var(--kb-muted);        /* secondary text           */
   --color-faint:       var(--kb-faint);        /* tertiary text, counts    */
-  --color-accent:      var(--kb-accent);       /* single brand accent      */
+  --color-accent:      var(--kb-accent);       /* forest green — leads     */
   --color-accent-fg:   var(--kb-accent-fg);    /* text/icon on accent      */
   --color-accent-weak: var(--kb-accent-weak);  /* accent-tinted surface    */
+  --color-clay:        var(--kb-clay);         /* warm CTA accent (create) */
+  --color-clay-fg:     var(--kb-clay-fg);      /* text/icon on clay        */
+  --color-clay-weak:   var(--kb-clay-weak);    /* clay-tinted surface      */
 
-  /* typography — self-hosted Geist (imported in main.jsx), with system fallbacks. */
+  /* typography — self-hosted Geist (imported in main.jsx), with system fallbacks.
+     A system serif carries the wordmark + dialog titles for a calmer signature. */
   --font-sans: "Geist Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont,
                "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-serif: ui-serif, "Iowan Old Style", Georgia, "Palatino Linotype",
+               "Times New Roman", serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", "JetBrains Mono",
                "Cascadia Code", Consolas, monospace;
 
@@ -42,38 +48,45 @@
   --shadow-raised:     0 10px 30px -8px rgb(28 24 20 / 0.28);
 }
 
-/* Light theme (default) — "Warm Editorial": one warm-stone gray family,
-   ivory paper canvas, a single calm ink-blue accent. */
+/* Light theme (default) — "Warm Green & Wood": forest green leads, walnut tones
+   give the chrome structure, a single clay accent carries create actions, all on
+   warm paper (not cold white). */
 :root {
-  --kb-canvas:      #f7f5f1;
-  --kb-surface:     #fffdfa;
-  --kb-panel:       #efece5;
-  --kb-line:        #e4dfd5;
-  --kb-line-strong: #d6cfc1;
-  --kb-ink:         #292524;
-  --kb-muted:       #6b6660;
-  --kb-faint:       #9c958a;
-  --kb-accent:      #3b6fd4;
+  --kb-canvas:      #f3f0e7;
+  --kb-surface:     #fcfaf5;
+  --kb-panel:       #ece4d4;
+  --kb-line:        #e4ddcc;
+  --kb-line-strong: #d6ccb6;
+  --kb-ink:         #242a20;
+  --kb-muted:       #6e6a5b;
+  --kb-faint:       #9c9583;
+  --kb-accent:      #2f6b43;
   --kb-accent-fg:   #ffffff;
-  --kb-accent-weak: #e9eefb;
+  --kb-accent-weak: #e1eee3;
+  --kb-clay:        #b5683c;
+  --kb-clay-fg:     #ffffff;
+  --kb-clay-weak:   #f3e4da;
 
   color-scheme: light;
 }
 
-/* Dark theme — staged, not yet shipped (light-only today). Activates on
-   <html class="dark">. Kept here so dark mode is a one-scope change later. */
+/* Dark theme — warm charcoal (not cold slate); green + clay lift against it.
+   Activates on <html class="dark">. */
 .dark {
-  --kb-canvas:      #14110d;
-  --kb-surface:     #1d1812;
-  --kb-panel:       #17130e;
-  --kb-line:        #2c261d;
-  --kb-line-strong: #3a3327;
-  --kb-ink:         #ece7df;
-  --kb-muted:       #a59c8e;
-  --kb-faint:       #6f675a;
-  --kb-accent:      #6f9cf0;
-  --kb-accent-fg:   #11100c;
-  --kb-accent-weak: #1c2333;
+  --kb-canvas:      #22251e;
+  --kb-surface:     #2c302a;
+  --kb-panel:       #1c1f19;
+  --kb-line:        #3c4137;
+  --kb-line-strong: #4c5247;
+  --kb-ink:         #eeece2;
+  --kb-muted:       #b4b0a0;
+  --kb-faint:       #847e6e;
+  --kb-accent:      #7cc097;
+  --kb-accent-fg:   #16241b;
+  --kb-accent-weak: #2c3e31;
+  --kb-clay:        #db9266;
+  --kb-clay-fg:     #221912;
+  --kb-clay-weak:   #41291f;
 
   color-scheme: dark;
 }
@@ -110,6 +123,28 @@ body {
     transform: translateY(0.5px);
   }
 }
+
+/* entrance motion — all neutralized by the reduced-motion block below */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+.toast-in   { animation: toast-in 180ms ease-out; }
+.overlay-in { animation: overlay-in 140ms ease-out; }
+.pop-in     { animation: pop-in 170ms ease-out; }
+.drawer-in  { animation: drawer-in 200ms ease-out; }
 
 /* Honor reduced-motion: keep the UI legible, drop the movement. */
 @media (prefers-reduced-motion: reduce) {

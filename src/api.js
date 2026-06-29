@@ -42,3 +42,5 @@ export const fileInboxNote = (payload) => post('/api/inbox/file-note', payload);
 export const deleteInbox = (raw) =>
   fetch('/api/inbox?raw=' + encodeURIComponent(raw), { method: 'DELETE' }).then(json);
 export const searchVault = (q) => fetch('/api/search?q=' + encodeURIComponent(q)).then(json);
+export const saveWeekly = (week, body, force = false) => post('/api/weekly', { week, body, force });
+export const getWeeklyStatus = (week) => fetch('/api/weekly?week=' + encodeURIComponent(week)).then(json);

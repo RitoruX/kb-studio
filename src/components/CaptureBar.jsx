@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { Check } from '@untitledui/icons';
 
 // Parse the textarea into a title (line 1) + detail bullets (the rest).
 function parse(text) {
@@ -75,7 +76,7 @@ export default function CaptureBar({ onCapture }) {
         className="w-full resize-none rounded-lg border border-line-strong bg-surface px-3 py-1.5 text-sm leading-5 text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25"
       />
       {saved && (
-        <span className="absolute right-3 top-2 text-xs font-medium text-emerald-600 dark:text-emerald-400">✓ captured</span>
+        <span className="absolute right-3 top-2 flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400"><Check size={13} /> captured</span>
       )}
     </div>
   );

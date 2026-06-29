@@ -1,10 +1,11 @@
+import { Flag01, Check, CalendarDate, AlertTriangle } from '@untitledui/icons';
 import { projectColor, dueMeta } from '../constants';
 import { toExcerpt } from './Markdown';
 import { useConfig } from '../ConfigContext';
 
 // Presentational card — used by both the draggable board Card and the Today view.
 // Pass innerRef + dragProps for the board; pass just onClick for static lists.
-export default function CardView({ task, showProject, onClick, innerRef, dragProps = {}, dragging, overlay, grab }) {
+export default function CardView({ task, showProject, onClick, onToggleBlocked, innerRef, dragProps = {}, dragging, overlay, grab }) {
   const config = useConfig();
   const due = dueMeta(task.due);
   const excerpt = toExcerpt(task.description);
@@ -37,7 +38,25 @@ export default function CardView({ task, showProject, onClick, innerRef, dragPro
         overlay ? 'rotate-2 shadow-raised cursor-grabbing' : '',
       ].join(' ')}
     >
-      <p className="text-sm font-medium leading-snug text-ink">{task.title}</p>
+      <div className="flex items-start gap-1.5">
+        <p className="flex-1 text-sm font-medium leading-snug text-ink">{task.title}</p>
+        {onToggleBlocked && (
+          <button
+            type="button"
+            title={task.blocked ? 'Unblock' : 'Mark blocked'}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleBlocked(task);
+            }}
+            className={[
+              'shrink-0 rounded leading-none transition',
+              task.blocked ? 'text-red-600 opacity-100 dark:text-red-400' : 'text-muted opacity-0 group-hover:opacity-60 hover:!opacity-100',
+            ].join(' ')}
+          >
+            <Flag01 size={14} />
+          </button>
+        )}
+      </div>
 
       {excerpt && (
         <p className="mt-1 max-h-20 overflow-hidden whitespace-pre-line text-xs leading-snug text-muted">
@@ -45,12 +64,26 @@ export default function CardView({ task, showProject, onClick, innerRef, dragPro
         </p>
       )}
 
-      {(due || showProject) && (
+      {(due || showProject || task.blocked || task.done) && (
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+          {task.blocked && (
+            <span
+              title={task.blockReason || 'Blocked'}
+              className="inline-flex max-w-full items-center gap-1 rounded bg-red-100 px-1.5 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-500/15 dark:text-red-300"
+            >
+              <Flag01 size={11} className="shrink-0" />
+              <span className="truncate">{task.blockReason || 'Blocked'}</span>
+            </span>
+          )}
+          {task.done && (
+            <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+              <Check size={11} className="shrink-0" /> {task.done}
+            </span>
+          )}
           {due && (
             <span
               className={[
-                'rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
+                'inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] font-medium tabular-nums',
                 due.overdue
                   ? 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300'
                   : due.soon
@@ -58,7 +91,7 @@ export default function CardView({ task, showProject, onClick, innerRef, dragPro
                     : 'bg-panel text-muted',
               ].join(' ')}
             >
-              {due.overdue ? '⚠ ' : '📅 '}
+              {due.overdue ? <AlertTriangle size={11} /> : <CalendarDate size={11} />}
               {due.label}
             </span>
           )}

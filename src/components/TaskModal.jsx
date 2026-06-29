@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Flag01 } from '@untitledui/icons';
 import Markdown, { toggleChecklistItem, normalizeChecklists } from './Markdown';
 import { useConfig } from '../ConfigContext';
 
@@ -11,6 +12,8 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
     due: task.due || '',
     status: task.status || config.statuses[0]?.name || 'Backlog',
     project: task.project || '',
+    blocked: !!task.blocked,
+    blockReason: task.blockReason || '',
   });
   const [busy, setBusy] = useState(false);
   // Notion-style single field: render by default when there's content, edit on click
@@ -72,6 +75,8 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
+    // intentional: save/stopEditingDesc are recreated each render; deps cover what matters
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose, editingDesc, form, busy]);
 
   // keep keyboard focus inside the dialog
@@ -117,7 +122,7 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
 
   return (
     <div
-      className="fixed inset-0 z-20 flex items-start justify-center bg-stone-900/40 p-4 pt-10 sm:pt-20"
+      className="overlay-in fixed inset-0 z-20 flex items-start justify-center bg-stone-900/40 p-4 pt-10 sm:pt-20"
       // outside-click closes only when clean — guards against discarding edits by mis-click
       onClick={() => !dirty && onClose()}
     >
@@ -126,12 +131,12 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-modal-title"
-        className="flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-surface p-4 shadow-raised sm:p-5"
+        className="pop-in flex max-h-[88vh] w-full max-w-lg flex-col overflow-y-auto rounded-2xl bg-surface p-4 shadow-raised sm:p-5"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={trapTab}
       >
         <div className="mb-4 flex items-center gap-2">
-          <h3 id="task-modal-title" className="text-base font-semibold tracking-tight text-ink">
+          <h3 id="task-modal-title" className="font-serif text-lg font-semibold tracking-tight text-ink">
             {isNew ? 'New task' : 'Edit task'}
           </h3>
           {dirty && (
@@ -224,6 +229,25 @@ export default function TaskModal({ task, projects, onSave, onDelete, onClose, o
                 ))}
               </datalist>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="flex w-fit cursor-pointer items-center gap-2 text-sm text-muted">
+              <input
+                type="checkbox"
+                checked={form.blocked}
+                onChange={(e) => setForm((f) => ({ ...f, blocked: e.target.checked }))}
+              />
+              <Flag01 size={14} /> Blocked
+            </label>
+            {form.blocked && (
+              <input
+                className={field}
+                value={form.blockReason}
+                onChange={set('blockReason')}
+                placeholder="Why is it blocked? (e.g. waiting on IT)"
+              />
+            )}
           </div>
         </div>
 

@@ -41,14 +41,17 @@ export const DEFAULT_CONFIG = {
   obsidianVault: '',
 };
 
+// warm / earthy family so project chips belong to the green-wood identity —
+// moss, honey, clay, olive, gold, walnut, terracotta. (No pure red: it would
+// read as the "blocked" semantic.)
 const PALETTE = [
-  'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
-  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
   'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
-  'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300',
-  'bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300',
-  'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300',
+  'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300',
+  'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300',
+  'bg-lime-100 text-lime-700 dark:bg-lime-500/15 dark:text-lime-300',
+  'bg-yellow-100 text-yellow-800 dark:bg-yellow-500/15 dark:text-yellow-300',
+  'bg-stone-200 text-stone-700 dark:bg-stone-600/30 dark:text-stone-300',
+  'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
 ];
 
 export function projectColor(name = '') {
@@ -67,7 +70,44 @@ export function dueMeta(due) {
   return { label: due, overdue: days < 0, soon: days >= 0 && days <= 2 };
 }
 
-// time bucket for the Today view: 'overdue' | 'today' | 'week' | 'later' | null
+// current calendar week as [Mon 00:00, Sun 23:59:59] in local time
+export function weekRange(ref = new Date()) {
+  const start = new Date(ref);
+  start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - ((start.getDay() + 6) % 7)); // back up to Monday
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+// is a YYYY-MM-DD date inside the current calendar week?
+export function inThisWeek(dateStr) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  if (isNaN(d)) return false;
+  const { start, end } = weekRange();
+  return d >= start && d <= end;
+}
+
+// is a YYYY-MM-DD date within [start, end] (Date objects)?
+export function dateInRange(dateStr, start, end) {
+  if (!dateStr) return false;
+  const d = new Date(dateStr + 'T00:00:00');
+  return !isNaN(d) && d >= start && d <= end;
+}
+
+// ISO-8601 week label like "2026-W26" for the week containing `ref`
+export function isoWeekLabel(ref = new Date()) {
+  const d = new Date(Date.UTC(ref.getFullYear(), ref.getMonth(), ref.getDate()));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) + 3); // nearest Thursday
+  const firstThu = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  firstThu.setUTCDate(firstThu.getUTCDate() - ((firstThu.getUTCDay() + 6) % 7) + 3);
+  const week = 1 + Math.round((d - firstThu) / (7 * 86400000));
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+// time bucket for the week view: 'overdue' | 'today' | 'week' | 'later' | null
 export function dueBucket(due) {
   if (!due) return null;
   const today = new Date();

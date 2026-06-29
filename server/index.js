@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import matter from 'gray-matter';
-import { loadConfig, saveConfig } from './config.js';
+import { loadConfig, saveConfig, atomicWrite } from './config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -46,6 +46,13 @@ function resolveId(id) {
 
 const slugify = (s) =>
   s.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60) || 'task';
+
+// local (not UTC) YYYY-MM-DD — the done stamp must match the user's calendar day
+const todayLocal = () => {
+  const d = new Date();
+  const p = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
 
 // ---------- excludes + walking ----------
 function excludeSets() {
@@ -114,6 +121,9 @@ function toTask(data, content, a) {
     description: content.trim(),
     status: data[f.status] || config.statuses[0]?.name || 'Backlog',
     due: data[f.due] ? String(data[f.due]) : '',
+    done: f.done && data[f.done] ? String(data[f.done]) : '',
+    blocked: f.blocked ? !!data[f.blocked] : false,
+    blockReason: f.blockReason && data[f.blockReason] ? String(data[f.blockReason]) : '',
     project: deriveGroup(data, rel),
   };
 }
@@ -121,6 +131,15 @@ function toTask(data, content, a) {
 async function readTask(a) {
   const { data, content } = matter(await fs.readFile(a, 'utf8'));
   return toTask(data, content, a);
+}
+
+// A short kind label for a search hit: frontmatter `type` if present, else the
+// top folder with its leading number prefix stripped ("20-Meetings" -> "Meeting").
+function classify(data, rel) {
+  const t = data.type ?? data.kind;
+  if (t) return String(t);
+  const top = (rel.split('/')[0] || '').replace(/^\d+[-_]\s*/, '');
+  return top ? top.replace(/s$/, '') : 'note';
 }
 
 async function listTasks() {
@@ -154,13 +173,34 @@ function buildFrontmatter(existing, patch) {
   if (patch.status !== undefined) data[f.status] = patch.status;
   if (patch.due !== undefined) data[f.due] = patch.due || '';
   if (patch.group !== undefined && f.group?.key) data[f.group.key] = patch.group || '';
+  if (patch.blocked !== undefined) {
+    if (patch.blocked) data[f.blocked] = true;
+    else {
+      delete data[f.blocked];
+      delete data[f.blockReason]; // reason is meaningless once unblocked
+    }
+  }
+  if (patch.blockReason !== undefined && f.blockReason) {
+    if (patch.blockReason && data[f.blocked]) data[f.blockReason] = patch.blockReason.trim();
+    else delete data[f.blockReason];
+  }
+  // Stamp a completion date the first time a task enters Done; clear it if it
+  // leaves Done. Lets the week view answer "what did I finish this week?".
+  if (f.done) {
+    const status = patch.status !== undefined ? patch.status : data[f.status];
+    if (status === config.doneStatus) {
+      if (!data[f.done]) data[f.done] = todayLocal();
+    } else {
+      delete data[f.done];
+    }
+  }
   return data;
 }
 
 const writeNote = (a, body, data) =>
-  fs.writeFile(a, matter.stringify(body.trim() ? body.trim() + '\n' : '', data), 'utf8');
+  atomicWrite(a, matter.stringify(body.trim() ? body.trim() + '\n' : '', data));
 
-async function createTaskFile({ project = '', title, description = '', status, due = '' }) {
+async function createTaskFile({ project = '', title, description = '', status, due = '', blocked, blockReason }) {
   const dir = tasksDirForGroup(project);
   await fs.mkdir(dir, { recursive: true });
   const base = slugify(title);
@@ -168,7 +208,11 @@ async function createTaskFile({ project = '', title, description = '', status, d
   let i = 2;
   while (existsSync(path.join(dir, name))) name = `${base}-${i++}.md`;
   const a = path.join(dir, name);
-  const data = buildFrontmatter({}, { title, group: project, due, status: status || config.statuses[0]?.name });
+  // blocked/blockReason carried through so an "undo delete" restores them
+  const data = buildFrontmatter(
+    {},
+    { title, group: project, due, status: status || config.statuses[0]?.name, blocked, blockReason }
+  );
   await writeNote(a, description, data);
   return a;
 }
@@ -228,7 +272,7 @@ async function spliceInboxBlock(raw, replacement) {
   for (let s = 0; s + block.length <= fileLines.length; s++) {
     if (block.every((bl, k) => fileLines[s + k] === bl)) {
       fileLines.splice(s, block.length, ...(replacement == null ? [] : replacement.split('\n')));
-      await fs.writeFile(inboxPath(), fileLines.join('\n'), 'utf8');
+      await atomicWrite(inboxPath(), fileLines.join('\n'));
       return;
     }
   }
@@ -237,7 +281,7 @@ const removeInboxBlock = (raw) => spliceInboxBlock(raw, null);
 
 // Non-task items are filed into the KB as a standalone note (title -> H1 + filename).
 const notesDir = () => abs(config.notePath || 'Notes');
-async function createNoteFile({ title, body = '' }) {
+async function createNoteFile({ title, body = '', project = '' }) {
   const dir = notesDir();
   await fs.mkdir(dir, { recursive: true });
   const base = slugify(title);
@@ -246,7 +290,9 @@ async function createNoteFile({ title, body = '' }) {
   while (existsSync(path.join(dir, name))) name = `${base}-${i++}.md`;
   const a = path.join(dir, name);
   const content = (`# ${String(title).trim()}\n\n${body || ''}`).trim() + '\n';
-  await fs.writeFile(a, matter.stringify(content, { created: new Date().toISOString().slice(0, 10) }), 'utf8');
+  const data = { created: new Date().toISOString().slice(0, 10) };
+  if (project) data.project = project; // records which project the note belongs to
+  await atomicWrite(a, matter.stringify(content, data));
   return a;
 }
 
@@ -295,7 +341,7 @@ app.post('/api/tasks', async (req, res) => {
 
 app.patch('/api/tasks', async (req, res) => {
   try {
-    const { id, title, description, status, due, project } = req.body;
+    const { id, title, description, status, due, project, blocked, blockReason } = req.body;
     if (!id) return res.status(400).json({ error: 'id required' });
 
     const src = resolveId(id);
@@ -305,6 +351,8 @@ app.patch('/api/tasks', async (req, res) => {
     if (status !== undefined) patch.status = status;
     if (due !== undefined) patch.due = due;
     if (project !== undefined) patch.group = project;
+    if (blocked !== undefined) patch.blocked = blocked;
+    if (blockReason !== undefined) patch.blockReason = blockReason;
     const next = buildFrontmatter(data, patch);
     const body = description !== undefined ? description : content;
 
@@ -326,8 +374,14 @@ app.patch('/api/tasks', async (req, res) => {
 app.delete('/api/tasks', async (req, res) => {
   try {
     if (!req.query.id) return res.status(400).json({ error: 'id required' });
-    await fs.rm(resolveId(req.query.id));
-    res.json({ ok: true });
+    // soft-delete: move into <trashPath>/ (mirroring the path), recoverable in Obsidian
+    const src = resolveId(req.query.id);
+    const dest = abs(path.join(config.trashPath || '.trash', relId(src)));
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    let target = dest;
+    for (let i = 2; existsSync(target); i++) target = dest.replace(/\.md$/i, `-${i}.md`);
+    await fs.rename(src, target);
+    res.json({ ok: true, trashed: relId(target) });
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
@@ -357,7 +411,7 @@ app.post('/api/inbox', async (req, res) => {
     const next = raw.includes(heading)
       ? raw.replace(heading, `${heading}\n${entry}`)
       : `${raw.replace(/\s*$/, '')}\n\n${heading}\n${entry}\n`;
-    await fs.writeFile(inboxPath(), next, 'utf8');
+    await atomicWrite(inboxPath(), next);
     res.status(201).json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: String(e) });
@@ -379,9 +433,9 @@ app.put('/api/inbox', async (req, res) => {
 // file a non-task item into the KB as a standalone note, then drop it from the inbox
 app.post('/api/inbox/file-note', async (req, res) => {
   try {
-    const { raw, title, body } = req.body;
+    const { raw, title, body, project } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'title required' });
-    const a = await createNoteFile({ title, body });
+    const a = await createNoteFile({ title, body, project });
     await removeInboxBlock(raw);
     res.status(201).json({ ok: true, file: relId(a) });
   } catch (e) {
@@ -410,6 +464,32 @@ app.delete('/api/inbox', async (req, res) => {
   }
 });
 
+// ---------- API: weekly snapshot ----------
+// Does this week's snapshot already exist? (drives the Fri/Sat save reminder)
+app.get('/api/weekly', (req, res) => {
+  const week = String(req.query.week || '').replace(/[^0-9A-Za-z-]/g, '');
+  if (!week) return res.status(400).json({ error: 'week required' });
+  const a = path.join(abs(config.weeklyPath || 'Weekly'), `${week}.md`);
+  res.json({ exists: existsSync(a), file: relId(a) });
+});
+
+// Save a weekly-summary draft to <weeklyPath>/<week>.md. Create-only: if the
+// file exists we leave it (you may have edited it) and report `existed`.
+app.post('/api/weekly', async (req, res) => {
+  try {
+    const { week, body, force } = req.body;
+    if (!week || !body?.trim()) return res.status(400).json({ error: 'week and body required' });
+    const dir = abs(config.weeklyPath || 'Weekly');
+    await fs.mkdir(dir, { recursive: true });
+    const a = path.join(dir, `${String(week).replace(/[^0-9A-Za-z-]/g, '')}.md`);
+    if (existsSync(a) && !force) return res.json({ file: relId(a), existed: true });
+    await atomicWrite(a, body.trim() + '\n');
+    res.status(201).json({ file: relId(a), existed: false });
+  } catch (e) {
+    res.status(500).json({ error: String(e) });
+  }
+});
+
 // ---------- API: search ----------
 app.get('/api/search', async (req, res) => {
   try {
@@ -418,7 +498,7 @@ app.get('/api/search', async (req, res) => {
     const needle = q.toLowerCase();
     const ex = excludeSets();
     const LIMIT = 50;
-    const results = [];
+    const matches = [];
 
     for await (const a of walkMarkdown(VAULT_PATH, ex)) {
       let raw;
@@ -428,10 +508,20 @@ app.get('/api/search', async (req, res) => {
         continue;
       }
       if (!raw.toLowerCase().includes(needle)) continue;
-      const titleM = raw.match(/^#\s+(.+)$/m);
-      const lines = raw.split('\n');
+      let data = {};
+      let body = raw;
+      try {
+        ({ data, content: body } = matter(raw));
+      } catch {
+        /* not valid frontmatter — search the raw text */
+      }
+      const rel = relId(a);
+      const title =
+        data[config.fields.title] || raw.match(/^#\s+(.+)$/m)?.[1]?.trim() || path.basename(a, '.md');
+      // snippet from the first body line that matches; fall back to the title line
       let snippet = '';
       let line = 0;
+      const lines = body.split('\n');
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toLowerCase().includes(needle)) {
           snippet = lines[i].trim().slice(0, 200);
@@ -439,10 +529,20 @@ app.get('/api/search', async (req, res) => {
           break;
         }
       }
-      results.push({ file: relId(a), title: titleM ? titleM[1].trim() : path.basename(a, '.md'), snippet, line });
-      if (results.length >= LIMIT) break;
+      matches.push({
+        file: rel,
+        dir: rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '',
+        kind: classify(data, rel),
+        title: String(title),
+        snippet,
+        line,
+        inTitle: String(title).toLowerCase().includes(needle),
+      });
+      if (matches.length >= 80) break;
     }
-    res.json(results);
+    // title matches first, then alphabetical by path
+    matches.sort((a, b) => b.inTitle - a.inTitle || a.file.localeCompare(b.file));
+    res.json(matches.slice(0, LIMIT));
   } catch (e) {
     res.status(500).json({ error: String(e) });
   }
