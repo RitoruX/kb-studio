@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ChevronUp, ChevronDown, XClose } from '@untitledui/icons';
 import { COLOR_NAMES, statusDot } from '../constants';
+import ThemeToggle from './ThemeToggle';
 
 const field =
   'w-full rounded-lg border border-line-strong bg-surface px-3 py-2 text-sm text-ink placeholder:text-faint focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/25';
@@ -74,6 +75,17 @@ export default function SettingsModal({ config, onSave, onClose }) {
         <h3 className="mb-4 font-serif text-lg font-semibold tracking-tight text-ink">Settings</h3>
 
         <div className="space-y-5">
+          {/* Appearance — device-local + instant-apply, so it sits ABOVE the
+              save-gated form and is separated by a rule. It does NOT go through
+              the Save button: theme lives in localStorage, the rest is server config. */}
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-5">
+            <div>
+              <span className={label}>Appearance</span>
+              <p className="text-[11px] text-faint">Applies instantly · saved on this device</p>
+            </div>
+            <ThemeToggle />
+          </div>
+
           {/* statuses */}
           <div>
             <label className={label}>Columns / statuses</label>

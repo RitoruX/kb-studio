@@ -14,11 +14,11 @@ import WeekView from './components/WeekView';
 import HeadsUp from './components/HeadsUp';
 import SettingsModal from './components/SettingsModal';
 import BoardSkeleton from './components/BoardSkeleton';
-import ThemeToggle from './components/ThemeToggle';
-import { ClipboardCheck, Inbox01, Bell01, BellOff01, Settings01, XClose } from '@untitledui/icons';
+import { ClipboardCheck, Inbox01, Bell01, BellOff01, Settings01, HelpCircle, XClose } from '@untitledui/icons';
 import Toaster from './components/Toaster';
 import HelpModal from './components/HelpModal';
 import { toast } from './toast';
+import { ICON_BTN } from './ui';
 
 export default function App() {
   const [tasks, setTasks] = useState([]);
@@ -310,6 +310,9 @@ export default function App() {
     <ConfigContext.Provider value={config}>
       <div className="min-h-dvh bg-canvas text-ink">
         <header className="sticky top-0 z-10 border-b border-line bg-surface/80 backdrop-blur">
+          {/* Row 1 — global chrome: identity + view switch (left), app utilities (right).
+              Grouping the utilities into one ml-auto cluster gives the row two clean
+              poles instead of seven evenly-spaced controls (proximity / Gestalt). */}
           <div className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-5">
             <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
               <ClipboardCheck size={20} className="text-accent" />
@@ -334,54 +337,62 @@ export default function App() {
               ))}
             </div>
 
-            <button
-              onClick={() => setInboxOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
-            >
-              <Inbox01 size={15} /> Inbox
-              {inbox.length > 0 && (
-                <span className="rounded-full bg-clay px-1.5 text-[11px] font-semibold tabular-nums text-clay-fg">
-                  {inbox.length}
-                </span>
-              )}
-            </button>
-
-            {notify !== 'unsupported' && (
+            <div className="ml-auto flex items-center gap-1">
               <button
-                onClick={enableNotify}
-                title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
-                className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
+                onClick={() => setInboxOpen(true)}
+                className="inline-flex h-8 items-center gap-1.5 rounded-full bg-panel px-3 text-sm text-muted transition hover:bg-line hover:text-ink"
               >
-                {notify === 'granted' ? <Bell01 size={15} /> : <BellOff01 size={15} />}
+                <Inbox01 size={16} /> Inbox
+                {inbox.length > 0 && (
+                  <span className="rounded-full bg-ink/10 px-1.5 text-[11px] font-semibold tabular-nums text-ink">
+                    {inbox.length}
+                  </span>
+                )}
               </button>
-            )}
 
-            <ThemeToggle />
+              {notify !== 'unsupported' && (
+                <button
+                  onClick={enableNotify}
+                  title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
+                  className={ICON_BTN}
+                >
+                  {notify === 'granted' ? <Bell01 size={16} /> : <BellOff01 size={16} />}
+                </button>
+              )}
 
-            <button
-              onClick={() => setSettingsOpen(true)}
-              title="Settings"
-              className="rounded-full bg-panel px-2.5 py-1.5 text-sm text-muted transition hover:bg-line hover:text-ink"
-            >
-              <Settings01 size={15} />
-            </button>
+              <button onClick={() => setSettingsOpen(true)} title="Settings" className={ICON_BTN}>
+                <Settings01 size={16} />
+              </button>
 
-            <button
-              onClick={() => setHelpOpen(true)}
-              title="Keyboard shortcuts (?)"
-              aria-label="Keyboard shortcuts"
-              className="rounded-full bg-panel px-2.5 py-1 text-sm font-medium text-muted transition hover:bg-line hover:text-ink"
-            >
-              ?
-            </button>
+              <button
+                onClick={() => setHelpOpen(true)}
+                title="Keyboard shortcuts (?)"
+                aria-label="Keyboard shortcuts"
+                className={ICON_BTN}
+              >
+                <HelpCircle size={16} />
+              </button>
+            </div>
+          </div>
 
-            <div className="ml-auto flex flex-wrap gap-1.5">
+          {/* Row 2 — capture + find: global inputs, capture grows, search fixed. */}
+          <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 py-2 sm:px-5">
+            <CaptureBar onCapture={handleCapture} />
+            <SearchBox />
+          </div>
+
+          {/* Row 3 — project filter: it scopes the board, so it sits closest to the
+              board it affects. Its own band (scrolls when there are many projects),
+              no longer crammed beside the chrome icons. Hidden when there's nothing
+              to filter (only "All"). */}
+          {tabs.length > 1 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto border-t border-line px-3 py-2 sm:px-5">
               {tabs.map((p) => (
                 <button
                   key={p}
                   onClick={() => setFilter(p)}
                   className={[
-                    'rounded-full px-3 py-1 text-sm transition',
+                    'shrink-0 rounded-full px-3 py-1 text-sm transition',
                     filter === p
                       ? 'bg-accent text-accent-fg'
                       : 'bg-panel text-muted hover:bg-line hover:text-ink',
@@ -391,11 +402,7 @@ export default function App() {
                 </button>
               ))}
             </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 py-2 sm:px-5">
-            <CaptureBar onCapture={handleCapture} />
-            <SearchBox />
-          </div>
+          )}
         </header>
 
         <main className="p-3 sm:p-5">

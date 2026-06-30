@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Monitor01, Sun, Moon01 } from '@untitledui/icons';
 import { getTheme, setTheme, applyTheme } from '../theme';
 
-// cycle System → Light → Dark; system detection beats a binary sun/moon switch
-const NEXT = { system: 'light', light: 'dark', dark: 'system' };
-const ICON = { system: Monitor01, light: Sun, dark: Moon01 };
-const LABEL = { system: 'System', light: 'Light', dark: 'Dark' };
+// All three modes are visible at once and the active one is filled — so you can
+// see the options and jump straight to any of them. (The old tri-state *cycle*
+// hid the choices and, worse, System + Light render identically when the OS is
+// light, so cycling between them produced no visible change — it read as broken.)
+const MODES = [
+  ['system', 'System'],
+  ['light', 'Light'],
+  ['dark', 'Dark'],
+];
 
 export default function ThemeToggle() {
   const [theme, setThemeState] = useState(getTheme);
@@ -18,21 +22,28 @@ export default function ThemeToggle() {
     return () => m.removeEventListener('change', onChange);
   }, [theme]);
 
-  function cycle() {
-    const next = NEXT[theme];
-    setTheme(next);
-    setThemeState(next);
+  function pick(mode) {
+    setTheme(mode);
+    setThemeState(mode);
   }
 
-  const Icon = ICON[theme];
+  // Same segmented pattern as the Board/Weekly switch — one control language for
+  // "pick one of a fixed, small set" across the app.
   return (
-    <button
-      onClick={cycle}
-      title={`Theme: ${LABEL[theme]} — click for ${LABEL[NEXT[theme]]}`}
-      aria-label={`Theme: ${LABEL[theme]}. Click to switch to ${LABEL[NEXT[theme]]}.`}
-      className="rounded-full bg-panel px-2.5 py-1.5 text-sm text-muted transition hover:bg-line hover:text-ink"
-    >
-      <Icon size={15} />
-    </button>
+    <div role="group" aria-label="Theme" className="flex rounded-lg bg-panel p-0.5 text-sm">
+      {MODES.map(([mode, label]) => (
+        <button
+          key={mode}
+          onClick={() => pick(mode)}
+          aria-pressed={theme === mode}
+          className={[
+            'rounded-md px-2.5 py-1 font-medium transition',
+            theme === mode ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink',
+          ].join(' ')}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }
