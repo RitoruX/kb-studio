@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors, closestCorners } from '@dnd-kit/core';
 import * as api from './api';
 import { DEFAULT_CONFIG, dueBucket, weekRange, isoWeekLabel } from './constants';
@@ -100,7 +100,7 @@ export default function App() {
       setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
       toast(`Moved to ${newStatus}`);
     } catch {
-      toast('Couldn’t move — restored', { type: 'error' });
+      toast("Couldn't move — restored", { type: 'error' });
       refresh();
     }
   }
@@ -123,7 +123,7 @@ export default function App() {
       }
       setEditing(null); // closes the modal only on success — errors keep your edits
     } catch (e) {
-      toast(`Couldn’t save — ${e.message || e}`, { type: 'error' });
+      toast(`Couldn't save — ${e.message || e}`, { type: 'error' });
     }
   }
 
@@ -165,7 +165,7 @@ export default function App() {
       refresh(); // task discovery / grouping may have changed
       toast('Settings saved');
     } catch (e) {
-      toast(`Couldn’t save settings — ${e.message || e}`, { type: 'error' });
+      toast(`Couldn't save settings — ${e.message || e}`, { type: 'error' });
     }
   }
 
@@ -185,7 +185,7 @@ export default function App() {
       toast(r.existed ? 'Weekly summary already saved' : `Saved ${r.file}`);
       setWeeklyDue(null);
     } catch (e) {
-      toast(`Couldn’t save summary — ${e.message || e}`, { type: 'error' });
+      toast(`Couldn't save summary — ${e.message || e}`, { type: 'error' });
     }
   }
 
@@ -308,172 +308,195 @@ export default function App() {
 
   return (
     <ConfigContext.Provider value={config}>
-      <div className="min-h-dvh bg-canvas text-ink">
-        <header className="sticky top-0 z-10 border-b border-line bg-surface/80 backdrop-blur">
-          <div className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-5">
-            <h1 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
-              <ClipboardCheck size={20} className="text-accent" />
-              <span className="font-serif">KB Studio</span>
-            </h1>
+      <div className="flex h-dvh overflow-hidden bg-canvas text-ink">
 
-            <div className="flex rounded-lg bg-panel p-0.5 text-sm">
-              {[
-                ['board', 'Board'],
-                ['week', 'Weekly'],
-              ].map(([v, lbl]) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={[
-                    'rounded-md px-3 py-1 font-medium transition',
-                    view === v ? 'bg-surface text-ink shadow-card' : 'text-muted hover:text-ink',
-                  ].join(' ')}
-                >
-                  {lbl}
-                </button>
-              ))}
+        {/* ── Sidebar ─────────────────────────────────────────────── */}
+        <aside className="flex w-64 shrink-0 flex-col border-r border-outline-variant bg-surface-container-low wood-texture">
+          {/* Logo */}
+          <div className="border-b border-outline-variant px-4 py-6">
+            <div className="flex items-center gap-3 px-1 transition-transform duration-300 hover:translate-x-0.5">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-container text-on-primary-container">
+                <ClipboardCheck size={18} />
+              </div>
+              <div>
+                <h1 className="text-sm font-bold text-primary">KB Studio</h1>
+                <p className="text-xs text-on-surface-variant">
+                  {filter !== 'All' && filter !== noGroupLabel ? filter : 'Creative Strategy'}
+                </p>
+              </div>
             </div>
+          </div>
 
-            <button
-              onClick={() => setInboxOpen(true)}
-              className="flex items-center gap-1.5 rounded-full bg-panel px-3 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
-            >
-              <Inbox01 size={15} /> Inbox
-              {inbox.length > 0 && (
-                <span className="rounded-full bg-clay px-1.5 text-[11px] font-semibold tabular-nums text-clay-fg">
-                  {inbox.length}
-                </span>
-              )}
-            </button>
-
-            {notify !== 'unsupported' && (
+          {/* Project nav */}
+          <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-2">
+            {tabs.map((p) => (
               <button
-                onClick={enableNotify}
-                title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
-                className="rounded-full bg-panel px-2.5 py-1 text-sm text-muted transition hover:bg-line hover:text-ink"
+                key={p}
+                onClick={() => setFilter(p)}
+                className={[
+                  'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-all duration-300',
+                  filter === p
+                    ? 'bg-primary-container font-bold text-on-primary-container'
+                    : 'text-on-surface-variant hover:bg-surface-container-high hover:text-primary',
+                ].join(' ')}
               >
-                {notify === 'granted' ? <Bell01 size={15} /> : <BellOff01 size={15} />}
+                {p === 'All' ? 'Tasks' : p}
               </button>
-            )}
+            ))}
+          </nav>
 
+          {/* Bottom actions */}
+          <div className="space-y-0.5 border-t border-outline-variant p-2">
             <ThemeToggle />
-
             <button
               onClick={() => setSettingsOpen(true)}
-              title="Settings"
-              className="rounded-full bg-panel px-2.5 py-1.5 text-sm text-muted transition hover:bg-line hover:text-ink"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant transition-all duration-300 hover:bg-surface-container-high hover:text-primary"
             >
-              <Settings01 size={15} />
+              <Settings01 size={15} /> Settings
             </button>
-
             <button
               onClick={() => setHelpOpen(true)}
-              title="Keyboard shortcuts (?)"
-              aria-label="Keyboard shortcuts"
-              className="rounded-full bg-panel px-2.5 py-1 text-sm font-medium text-muted transition hover:bg-line hover:text-ink"
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-on-surface-variant transition-all duration-300 hover:bg-surface-container-high hover:text-primary"
             >
-              ?
+              <span className="text-xs font-medium">?</span> Shortcuts
             </button>
-
-            <div className="ml-auto flex flex-wrap gap-1.5">
-              {tabs.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setFilter(p)}
-                  className={[
-                    'rounded-full px-3 py-1 text-sm transition',
-                    filter === p
-                      ? 'bg-accent text-accent-fg'
-                      : 'bg-panel text-muted hover:bg-line hover:text-ink',
-                  ].join(' ')}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
           </div>
-          <div className="flex flex-wrap items-center gap-3 border-t border-line px-3 py-2 sm:px-5">
-            <CaptureBar onCapture={handleCapture} />
-            <SearchBox />
-          </div>
-        </header>
+        </aside>
 
-        <main className="p-3 sm:p-5">
-          {error && (
-            <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-              Can’t reach the API: {error}. Is the server running (<code>npm run dev</code>)?
-            </div>
-          )}
-
-          {weeklyDue && (
-            <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-line-strong bg-clay-weak px-4 py-2.5 text-sm">
-              <span className="font-medium text-ink">
-                It’s {weeklyDue} — you haven’t saved this week’s summary yet.
-              </span>
-              <button
-                onClick={saveWeeklyNow}
-                className="rounded-md bg-clay px-2.5 py-1 text-xs font-semibold text-clay-fg transition hover:bg-clay/90"
-              >
-                Save now
-              </button>
-              <button
-                onClick={() => {
-                  setView('week');
-                  setWeeklyDue(null);
-                }}
-                className="rounded-md px-2 py-1 text-xs font-medium text-muted transition hover:text-ink"
-              >
-                Open This Week
-              </button>
-              <button
-                onClick={() => setWeeklyDue(null)}
-                className="ml-auto rounded p-1 text-faint transition hover:text-ink"
-                title="Dismiss"
-              >
-                <XClose size={15} />
-              </button>
-            </div>
-          )}
-
-          {!dismissedHeadsUp && (
-            <HeadsUp
-              overdue={overdueCount}
-              today={todayCount}
-              onView={() => setView('week')}
-              onDismiss={() => setDismissedHeadsUp(true)}
-            />
-          )}
-
-          {loading ? (
-            <BoardSkeleton />
-          ) : view === 'week' ? (
-            <WeekView tasks={visible} onOpen={setEditing} onToggleBlocked={toggleBlocked} />
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragStart={(e) => setActiveId(e.active.id)}
-              onDragEnd={onDragEnd}
-              onDragCancel={() => setActiveId(null)}
-            >
-              <div className="flex gap-3 overflow-x-auto pb-4">
-                {boardStatuses.map((s) => (
-                  <Column
-                    key={s}
-                    status={s}
-                    tasks={visible.filter((t) => t.status === s)}
-                    onCreate={quickCreate}
-                    onOpen={setEditing}
-                    showProject={filter === 'All'}
-                  />
+        {/* ── Main column ─────────────────────────────────────────── */}
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <header className="sticky top-0 z-10 shrink-0 border-b border-outline-variant bg-surface/80 backdrop-blur-sm transition-colors duration-300">
+            <div className="flex items-center justify-between px-10 py-4">
+              {/* Underline-style view tabs */}
+              <div className="flex items-center gap-6">
+                {[
+                  ['board', 'Board'],
+                  ['week', 'Weekly'],
+                ].map(([v, lbl]) => (
+                  <button
+                    key={v}
+                    onClick={() => setView(v)}
+                    className={[
+                      'pb-1 text-sm font-semibold transition-all duration-300',
+                      view === v
+                        ? 'border-b-2 border-primary text-primary'
+                        : 'text-on-surface-variant opacity-80 hover:text-primary hover:opacity-100',
+                    ].join(' ')}
+                  >
+                    {lbl}
+                  </button>
                 ))}
+                <button
+                  onClick={() => setInboxOpen(true)}
+                  className="flex items-center gap-1 pb-1 text-sm font-semibold text-on-surface-variant opacity-80 transition-all duration-300 hover:text-primary hover:opacity-100"
+                >
+                  <Inbox01 size={15} /> Inbox
+                  {inbox.length > 0 && (
+                    <span className="ml-1 rounded-full bg-clay px-1.5 text-[11px] font-semibold tabular-nums text-clay-fg">
+                      {inbox.length}
+                    </span>
+                  )}
+                </button>
               </div>
-              <DragOverlay>
-                {activeTask ? <Card task={activeTask} overlay showProject={filter === 'All'} onOpen={() => {}} /> : null}
-              </DragOverlay>
-            </DndContext>
-          )}
-        </main>
+
+              {/* Search + Bell */}
+              <div className="flex flex-1 items-center justify-end gap-4">
+                <SearchBox />
+                {notify !== 'unsupported' && (
+                  <button
+                    onClick={enableNotify}
+                    title={notify === 'granted' ? 'Due-today reminders on' : 'Enable due-today reminders'}
+                    className="rounded-full p-2 text-on-surface-variant transition-all duration-300 hover:bg-surface-container-high hover:text-primary"
+                  >
+                    {notify === 'granted' ? <Bell01 size={18} /> : <BellOff01 size={18} />}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Capture bar */}
+            <div className="border-t border-outline-variant px-10 py-2">
+              <CaptureBar onCapture={handleCapture} />
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-y-auto p-4">
+            {error && (
+              <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                Can't reach the API: {error}. Is the server running (<code>npm run dev</code>)?
+              </div>
+            )}
+
+            {weeklyDue && (
+              <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-line-strong bg-clay-weak px-4 py-2.5 text-sm">
+                <span className="font-medium text-ink">
+                  It's {weeklyDue} — you haven't saved this week's summary yet.
+                </span>
+                <button
+                  onClick={saveWeeklyNow}
+                  className="rounded-md bg-clay px-2.5 py-1 text-xs font-semibold text-clay-fg transition hover:bg-clay/90"
+                >
+                  Save now
+                </button>
+                <button
+                  onClick={() => {
+                    setView('week');
+                    setWeeklyDue(null);
+                  }}
+                  className="rounded-md px-2 py-1 text-xs font-medium text-muted transition hover:text-ink"
+                >
+                  Open This Week
+                </button>
+                <button
+                  onClick={() => setWeeklyDue(null)}
+                  className="ml-auto rounded p-1 text-faint transition hover:text-ink"
+                  title="Dismiss"
+                >
+                  <XClose size={15} />
+                </button>
+              </div>
+            )}
+
+            {!dismissedHeadsUp && (
+              <HeadsUp
+                overdue={overdueCount}
+                today={todayCount}
+                onView={() => setView('week')}
+                onDismiss={() => setDismissedHeadsUp(true)}
+              />
+            )}
+
+            {loading ? (
+              <BoardSkeleton />
+            ) : view === 'week' ? (
+              <WeekView tasks={visible} onOpen={setEditing} onToggleBlocked={toggleBlocked} />
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={(e) => setActiveId(e.active.id)}
+                onDragEnd={onDragEnd}
+                onDragCancel={() => setActiveId(null)}
+              >
+                <div className="flex gap-3 overflow-x-auto pb-4">
+                  {boardStatuses.map((s) => (
+                    <Column
+                      key={s}
+                      status={s}
+                      tasks={visible.filter((t) => t.status === s)}
+                      onCreate={quickCreate}
+                      onOpen={setEditing}
+                      showProject={filter === 'All'}
+                    />
+                  ))}
+                </div>
+                <DragOverlay>
+                  {activeTask ? <Card task={activeTask} overlay showProject={filter === 'All'} onOpen={() => {}} /> : null}
+                </DragOverlay>
+              </DndContext>
+            )}
+          </main>
+        </div>
 
         <InboxDrawer
           open={inboxOpen}

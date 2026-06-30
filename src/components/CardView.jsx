@@ -31,15 +31,16 @@ export default function CardView({ task, showProject, onClick, onToggleBlocked, 
           : undefined
       }
       className={[
-        'group rounded-lg border border-line bg-surface p-2.5 shadow-card transition hover:border-line-strong hover:shadow-card-hover',
-        interactive ? 'active:scale-[0.99]' : '',
-        grab ? 'cursor-grab active:cursor-grabbing' : onClick ? 'cursor-pointer' : '',
+        'group rounded-lg border border-outline-variant/20 bg-surface p-5 shadow-card transition-all duration-300',
+        'hover:-translate-y-1 hover:border-primary/50 hover:shadow-lg',
+        interactive ? 'cursor-pointer active:scale-[0.99]' : '',
+        grab ? 'cursor-grab active:cursor-grabbing' : '',
         dragging ? 'opacity-40' : '',
         overlay ? 'rotate-2 shadow-raised cursor-grabbing' : '',
       ].join(' ')}
     >
       <div className="flex items-start gap-1.5">
-        <p className="flex-1 text-sm font-medium leading-snug text-ink">{task.title}</p>
+        <p className="flex-1 text-[16px] font-semibold leading-snug text-on-surface transition-colors duration-300 group-hover:text-primary">{task.title}</p>
         {onToggleBlocked && (
           <button
             type="button"
@@ -59,7 +60,7 @@ export default function CardView({ task, showProject, onClick, onToggleBlocked, 
       </div>
 
       {excerpt && (
-        <p className="mt-1 max-h-20 overflow-hidden whitespace-pre-line text-xs leading-snug text-muted">
+        <p className="mb-4 mt-1 line-clamp-2 text-sm leading-snug text-on-surface-variant">
           {excerpt}
         </p>
       )}

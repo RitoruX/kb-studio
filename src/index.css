@@ -30,63 +30,85 @@
   --color-clay-fg:     var(--kb-clay-fg);      /* text/icon on clay        */
   --color-clay-weak:   var(--kb-clay-weak);    /* clay-tinted surface      */
 
+  /* Cedar & Sage MD aliases — lets component code use Stitch color names directly */
+  --color-primary:                 var(--kb-accent);
+  --color-primary-container:       var(--kb-primary-container);
+  --color-on-primary-container:    var(--kb-on-primary-container);
+  --color-on-surface:              var(--kb-ink);
+  --color-on-surface-variant:      var(--kb-muted);
+  --color-surface-container-low:   var(--kb-surface);
+  --color-surface-container-high:  var(--kb-panel);
+  --color-surface-variant:         var(--kb-surface-variant);
+  --color-outline-variant:         var(--kb-line);
+  --color-secondary-container:     var(--kb-accent-weak);
+  --color-on-secondary-container:  var(--kb-secondary);
+  --color-tertiary:                var(--kb-clay);
+  --color-tertiary-container:      var(--kb-clay);
+  --color-on-tertiary-container:   var(--kb-clay-weak);
+
   /* typography — self-hosted Geist (imported in main.jsx), with system fallbacks.
      A system serif carries the wordmark + dialog titles for a calmer signature. */
-  --font-sans: "Geist Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont,
-               "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "Geist Variable", "Noto Sans Thai", ui-sans-serif, -apple-system,
+               BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-serif: ui-serif, "Iowan Old Style", Georgia, "Palatino Linotype",
                "Times New Roman", serif;
   --font-mono: "Geist Mono Variable", ui-monospace, "SF Mono", "JetBrains Mono",
                "Cascadia Code", Consolas, monospace;
 
-  /* tinted shadows — carry the slate hue, single light source from above,
-     not generic pure-black. */
-  --shadow-card:       0 1px 2px -1px rgb(41 37 36 / 0.11),
-                       0 1px 1px    rgb(41 37 36 / 0.05);
-  --shadow-card-hover: 0 4px 12px -4px rgb(41 37 36 / 0.17),
-                       0 2px 4px  -2px rgb(41 37 36 / 0.09);
-  --shadow-raised:     0 10px 30px -8px rgb(28 24 20 / 0.28);
+  /* card shadows match reference: subtle black layer + sage-tinted ambient */
+  --shadow-card:       0 4px 6px  -1px rgb(0 0 0 / 0.05),
+                       0 2px 4px  -1px rgb(69 85 56 / 0.10);
+  --shadow-card-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08),
+                       0 4px 6px  -4px rgb(69 85 56 / 0.12);
+  --shadow-raised:     0 12px 36px -8px rgb(27 28 25 / 0.30);
 }
 
-/* Light theme (default) — "Warm Green & Wood": forest green leads, walnut tones
-   give the chrome structure, a single clay accent carries create actions, all on
-   warm paper (not cold white). */
+/* Light theme (default) — "Cedar & Sage" (Stitch: Timber Knowledge Flow):
+   sage/olive primary, warm parchment canvas, wood-oak CTA accent. */
 :root {
-  --kb-canvas:      #f3f0e7;
-  --kb-surface:     #fcfaf5;
-  --kb-panel:       #ece4d4;
-  --kb-line:        #e4ddcc;
-  --kb-line-strong: #d6ccb6;
-  --kb-ink:         #242a20;
-  --kb-muted:       #6e6a5b;
-  --kb-faint:       #9c9583;
-  --kb-accent:      #2f6b43;
+  --kb-canvas:      #fbf9f4;
+  --kb-surface:     #f5f3ee;
+  --kb-panel:       #eae8e3;
+  --kb-line:        #c5c8bc;
+  --kb-line-strong: #75786f;
+  --kb-ink:         #1b1c19;
+  --kb-muted:       #45483f;
+  --kb-faint:       #75786f;
+  --kb-accent:      #455538;
   --kb-accent-fg:   #ffffff;
-  --kb-accent-weak: #e1eee3;
-  --kb-clay:        #b5683c;
+  --kb-accent-weak: #d7e5bb;
+  --kb-clay:        #886036;
   --kb-clay-fg:     #ffffff;
-  --kb-clay-weak:   #f3e4da;
+  --kb-clay-weak:   #ffe3cc;
+  --kb-primary-container:    #5d6d4e;
+  --kb-on-primary-container: #dceec7;
+  --kb-surface-variant:      #e4e2dd;
+  --kb-secondary:            #5a6745;
 
   color-scheme: light;
 }
 
-/* Dark theme — warm charcoal (not cold slate); green + clay lift against it.
+/* Dark theme — derived from Cedar & Sage inverse tokens; warm charcoal base.
    Activates on <html class="dark">. */
 .dark {
-  --kb-canvas:      #22251e;
-  --kb-surface:     #2c302a;
-  --kb-panel:       #1c1f19;
-  --kb-line:        #3c4137;
-  --kb-line-strong: #4c5247;
-  --kb-ink:         #eeece2;
-  --kb-muted:       #b4b0a0;
-  --kb-faint:       #847e6e;
-  --kb-accent:      #7cc097;
-  --kb-accent-fg:   #16241b;
-  --kb-accent-weak: #2c3e31;
-  --kb-clay:        #db9266;
-  --kb-clay-fg:     #221912;
-  --kb-clay-weak:   #41291f;
+  --kb-canvas:      #1b1c19;
+  --kb-surface:     #30312e;
+  --kb-panel:       #24261f;
+  --kb-line:        #45483f;
+  --kb-line-strong: #75786f;
+  --kb-ink:         #e4e2dd;
+  --kb-muted:       #c5c8bc;
+  --kb-faint:       #75786f;
+  --kb-accent:      #bbcca7;
+  --kb-accent-fg:   #121f07;
+  --kb-accent-weak: #3c4b2f;
+  --kb-clay:        #f0bd8b;
+  --kb-clay-fg:     #2c1600;
+  --kb-clay-weak:   #623f18;
+  --kb-primary-container:    #3c4b2f;
+  --kb-on-primary-container: #d6e9c2;
+  --kb-surface-variant:      #45483f;
+  --kb-secondary:            #becca3;
 
   color-scheme: dark;
 }
@@ -201,3 +223,34 @@ body {
 .md-body hr { border: 0; border-top: 1px solid var(--color-line); margin: 0.75em 0; }
 .md-body table { border-collapse: collapse; }
 .md-body th, .md-body td { border: 1px solid var(--color-line); padding: 0.25rem 0.5rem; }
+
+/* ── Stitch / Cedar & Sage UI components ──────────────────────────────── */
+
+/* Kanban card shadow — matches reference dual-layer spec */
+.card-shadow {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -1px rgb(69 85 56 / 0.10);
+}
+
+/* Subtle wood-grain noise texture for sidebar */
+.wood-texture {
+  background-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg"><filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter><rect width="100%25" height="100%25" filter="url(%23n)" opacity="0.03"/></svg>');
+}
+
+/* Custom kanban scrollbar */
+.kanban-scroll::-webkit-scrollbar { height: 8px; width: 8px; }
+.kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+.kanban-scroll::-webkit-scrollbar-thumb { background-color: var(--kb-line); border-radius: 4px; }
+
+/* Scroll-in entrance animation for kanban cards */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-on-scroll {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .animate-on-scroll.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}

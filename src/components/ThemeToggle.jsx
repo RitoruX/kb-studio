@@ -30,9 +30,9 @@ export default function ThemeToggle() {
       onClick={cycle}
       title={`Theme: ${LABEL[theme]} — click for ${LABEL[NEXT[theme]]}`}
       aria-label={`Theme: ${LABEL[theme]}. Click to switch to ${LABEL[NEXT[theme]]}.`}
-      className="rounded-full bg-panel px-2.5 py-1.5 text-sm text-muted transition hover:bg-line hover:text-ink"
+      className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted transition hover:bg-panel hover:text-ink"
     >
-      <Icon size={15} />
+      <Icon size={15} /> {LABEL[theme]}
     </button>
   );
 }
